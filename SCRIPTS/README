@@ -1,0 +1,3 @@
+usage for checkEmbeddings.py
+
+checkEmbeddings.py <embeddings_file> <word> <k>
