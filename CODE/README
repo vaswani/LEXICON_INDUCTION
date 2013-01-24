@@ -1,1 +1,28 @@
-any useful instructions for the code can go in here
+to run the sanity check in matlab, simply type
+
+GMCCA.sanityCheck();
+
+A correct output look something like:
+####### start output #######
+Elapsed time is 0.549377 seconds.
+1), norm=2767.203	hamming=436.000000
+Elapsed time is 0.299506 seconds.
+2), norm=8603.935	hamming=379.000000
+Elapsed time is 0.202153 seconds.
+3), norm=10248.935	hamming=110.000000
+Elapsed time is 0.018949 seconds.
+4), norm=14601.629	hamming=0.000000
+Fixed point after t=4 iterations
+
+alignment = 
+
+    [  1]    [  1]
+    [  2]    [  2]
+    [  3]    [  3]
+  …
+    [500]    [500]
+
+####### end output #######
+
+
+
