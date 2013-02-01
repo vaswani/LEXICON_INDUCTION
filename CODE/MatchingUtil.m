@@ -33,28 +33,35 @@ classdef MatchingUtil
             NA = length(listA);
             NB = length(listB);
             W = inf(NA,NB);
-            for a=1:NA,
-                for b = 1:NB,
-                    word_a = listA{a};
-                    word_b = listB{b};
-                    cond_min_length = length(word_a) > 5 && length(word_b) > 5;
-                    cond_length_diff = abs(length(word_a) - length(word_b)) < 3;
-                    if cond_min_length && cond_length_diff % otherwise, skip.
-                        W(a,b) = Util.edit_distance_levenshtein(word_a,word_b);
+            % calculate pairwise edit-distance
+            W = Common.load_editdist_file(listA, listB, max_dist);
+            if isempty(W)
+                for a=1:NA,
+                    for b = 1:NB,
+                        word_a = listA{a};
+                        word_b = listB{b};
+                        cond_min_length = length(word_a) > 5 && length(word_b) > 5;
+                        cond_length_diff = abs(length(word_a) - length(word_b)) < 3;
+                        if cond_min_length && cond_length_diff % otherwise, skip.
+                            W(a,b) = Util.edit_distance_levenshtein(word_a,word_b);
+                        end
+                    end
+                    if mod(a, 100) == 0
+                        fprintf('Done with %d / %d\n', a, NA);
                     end
                 end
-                if mod(a, 100) == 0
-                    fprintf('done %d / %d\n', a, NA);
-                end
+                
+                Common.save_editdist_file(listA, listB, max_dist, W);
             end
+            % based on the distances, find a good matching.
             [best_match, total_cost] = MatchingUtil.match(W);
             ec = MatchingUtil.edge_cost(best_match, W);
             [sorted_ec, sigma] = sort(ec);
             best_match = best_match(sigma);
             top = find(sorted_ec>max_dist, 1);
+            % store the indices of the top matches in source and target
             match.source = sigma(1:top);
             match.target = best_match(1:top);
-           
             % [listA(match.source)', {listB{match.target}}', (mat2cell(ec(sigma(1:top))', ones(top,1)))]
         end
         
@@ -73,7 +80,7 @@ classdef MatchingUtil
             end
             [pi, cost] = MatchingUtil.lapjv(W, resolution);
             ec = MatchingUtil.edge_cost(pi, W);
-            if ~(sum(ec)-cost < 1e-8);
+            if ~isinf(cost) && ~(sum(ec)-cost < 1e-8);
                 keyboard;
             end
         end

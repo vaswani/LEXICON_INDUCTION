@@ -38,13 +38,13 @@ classdef GMCCA
                     F.hamming(t) = Util.hamming(Util.inverse_perm(pi_t), data.true_pi); 
                     fprintf('%d), norm=%2.3f\thamming=%f\n',t, F.obj(t), F.hamming(t));
                 else
-                    fprintf('%d), norm=%2.3f, hamming change=%d\n',t, F.obj(val), F.hamming(t));
+                    fprintf('%d), norm=%2.3f, hamming change=%d\n',t, F.obj(t), F.hamming(t));
                 end
                 
                 if F.hamming(t)==0  % fixed point - stopping condition
                     fprintf('Fixed point after t=%d iterations\n', t);
                     break;
-                    %options.d = options.d + 10; % this will probably through a bug later.
+                    %options.d = options.d + 10; % this will probably throw2 a bug later.
                 end
             end
 %             if any(F.hamming ~= inf)
@@ -69,21 +69,11 @@ classdef GMCCA
             
             source = Common.loadMat(source);
             target = Common.loadMat(target);
+            [~, source.pi] = Common.getFreq(source);
+            [~, target.pi] = Common.getFreq(target);
             
-            [~, pi.X] = Common.getFreq(source);
-            [~, pi.Y] = Common.getFreq(target);
-            pi.X = pi.X(1:maxN);
-            pi.Y = pi.Y(1:maxN);
-            
-            data.X.features      = source.features(pi.X,:);
-            data.X.features(:,1) = log10(data.X.features(:,1));
-            data.X.words = {source.words{pi.X}};
-            data.X.G     = Util.to_stochastic_graph(source.G(pi.X,pi.X));
-            
-            data.Y.features      = target.features(pi.Y,:);
-            data.Y.features(:,1) = log10(data.Y.features(:,1));
-            data.Y.words = {target.words{pi.Y}};
-            data.Y.G     = Util.to_stochastic_graph(target.G(pi.Y,pi.Y));
+            data.X = GMCCA.setup_most_frequent(source, maxN);
+            data.Y = GMCCA.setup_most_frequent(target, maxN);
             
             % figure out initial matching.
             % for now, based on edit-distance
@@ -91,9 +81,9 @@ classdef GMCCA
             data.seed.match = match;
             data.seed.N = length(match.source);
             
-            %
             [data.X] = GMCCA.fix_matched_words(data.X, match.source);
             [data.Y] = GMCCA.fix_matched_words(data.Y, match.target);
+            %init_alignment = GMCCA.getAlignment(data.X.words, data.Y.words)
             
             data.source = source;
             data.target = target;
@@ -101,21 +91,34 @@ classdef GMCCA
             %% OPTIONS
             weight_type = 'inner';
             T = 20;  % at most 20 iterations
-            p = 0.5;
+            p = 0.7; % start with d that preserves at least p of the eigenmass of X and Y
             d = max(Util.mass_to_dim(data.X.features, p), Util.mass_to_dim(data.Y.features, p)); % use d correlation dims
             K = 1;   % random walk steps
-            lambda = 2; % diffusion rate
+            lambda = 0; % diffusion rate
             options = GMCCA.makeOptions(weight_type, T, d, K,lambda); 
             
             
             fprintf('rank(X)=%d, rank(Y)=%d\n',rank(data.X.features), rank(data.Y.features));
             F = GMCCA.find_matching(options, data);
             
-            GMCCA.outputAlignment(data.X.words, data.Y.words, F.pi);
+            alignment = GMCCA.getAlignment(data.X.words, data.Y.words, F.pi)
         end
         
-        function outputAlignment(wordsX, wordsY, pi)
-            alignment = [wordsX', wordsY(pi)']
+        function X = setup_most_frequent(source, maxN)
+            source.pi = source.pi(1:maxN);
+            pi = source.pi;
+            X.features      = source.features(pi,:);
+            X.features(:,1) = log10(X.features(:,1));
+            X.words = source.words(pi);
+            X.G     = Util.to_stochastic_graph(source.G(pi, pi));
+        end
+        
+        function alignment = getAlignment(wordsX, wordsY, pi)
+            N = length(wordsX);
+            if nargin < 3
+            	pi = 1:N;
+            end
+            alignment = [ (mat2cell([1:N]', ones(N,1))),wordsX, wordsY(pi)];
         end
         
         function X = fix_matched_words(X, pi)
