@@ -1,3 +1,19 @@
 usage for checkEmbeddings.py
 
 checkEmbeddings.py <embeddings_file> <word> <k>
+
+usage for getFeatures.py
+
+python getFeatures.py word_freq_file 
+
+the word_freq_file should have the format
+
+<freq> <word>
+
+example :
+6662 parliament
+6526 union
+
+It will produce a feature vector for every word. The first feature is the frequency and the rest are indicator features for character ngrams of size 1,2,3
+
+
