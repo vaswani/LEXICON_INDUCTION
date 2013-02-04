@@ -24,4 +24,4 @@ distances_heap = priority_dict(distances)
 for i in range(k):
     p_argmin,p_min = distances_heap.pop_smallest()
     print p_argmin,', distance:',p_min
-
+    
