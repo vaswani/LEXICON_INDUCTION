@@ -16,4 +16,10 @@ example :
 
 It will produce a feature vector for every word. The first feature is the frequency and the rest are indicator features for character ngrams of size 1,2,3
 
+usage for createGraph.py
 
+python createGraph.py <nouns_file> <embeddings_file> <k>
+
+nouns file : 1 noun per file
+embeddings file : word \tab embeddings
+k = num of neighbors
