@@ -29,8 +29,8 @@ for word in word_list:
             #print word[index:index+size]
             word_ortho_list[ortho_to_int[word[index:index+size]]] += 1
         #now printing out the feature dict for the word
-        print "%s %s %s"%(word,freq[word],' '.join(map(repr,word_ortho_list)))
-        #raw_input()
+    print "%s %s %s"%(word,freq[word],' '.join(map(repr,word_ortho_list)))
+    #raw_input()
 
 '''
 #print 'the size of the dictionary is ',len(ortho_dict)
