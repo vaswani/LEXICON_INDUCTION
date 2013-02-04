@@ -24,11 +24,11 @@ classdef GMCCA
             for t=1:options.T,
                 options.t = t;
                 inv_pi = Util.inverse_perm(pi_t);
-                Z      = CCAUtil.latentCCA(data.X.features, data.Y.features(pi_t,:), options);             % compute latent representation under matching
-                Z.Y    = Z.Y(inv_pi,:);                                                  % permute back.
-                W_t    = MatchingUtil.makeWeights(options, Z.X, Z.Y, data.X.G, data.Y.G);  % compute weights 
+                Z      = CCAUtil.latentCCA(data.X.features, data.Y.features(pi_t,:), options);  % compute latent representation under matching
+                Z.Y    = Z.Y(inv_pi,:);                                                         % permute back.
+                W_t    = MatchingUtil.makeWeights(options, Z.X, Z.Y, data.X.G, data.Y.G);       % compute weights 
                 old_pi = pi_t;
-                tic; [pi_t, cost] = MatchingUtil.match(W_t, options); toc;                     % compute matching
+                tic; [pi_t, cost] = MatchingUtil.match(W_t, options); toc;                      % compute matching
                 % pi_t   = Util.randswap(pi_t, 4);
                 Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 
@@ -64,8 +64,10 @@ classdef GMCCA
         
         function run(maxN)
             %% DATA
-            source.filename = './data/en.ortho.v1_en.syns.v1.mat';
-            target.filename = './data/es.ortho.v1_es.syns.v1.mat';
+            %source.filename = './data/en.ortho.v1_en.syns.v1.mat';
+            %target.filename = './data/es.ortho.v1_es.syns.v1.mat';
+            source.filename = './data/FEB3_en.features.10k_en.syns.v1.mat';
+            target.filename = './data/FEB3_es.features.10k_es.syns.v1.mat';
             
             source = Common.loadMat(source);
             target = Common.loadMat(target);
