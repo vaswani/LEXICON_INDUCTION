@@ -20,6 +20,6 @@ usage for createGraph.py
 
 python createGraph.py <nouns_file> <embeddings_file> <k>
 
-nouns file : 1 noun per file
+nouns file : 1 noun per line 
 embeddings file : word \tab embeddings
 k = num of neighbors
