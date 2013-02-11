@@ -1,0 +1,10 @@
+use strict;
+
+while (<>) {
+	print "#\$_#\n";
+}
+use strict;
+
+while (<>) {
+	print "#\$_#\n";
+}
