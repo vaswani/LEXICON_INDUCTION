@@ -28,17 +28,19 @@ classdef GMCCA
                 Z.Y    = Z.Y(inv_pi,:);                                                         % permute back.
                 W_t    = MatchingUtil.makeWeights(options, Z.X, Z.Y, data.X.G, data.Y.G);       % compute weights 
                 old_pi = pi_t;
-                tic; [pi_t, cost] = MatchingUtil.match(W_t, options); toc;                      % compute matching
+                %figure; imagesc(W_t(:, pi_t));
+                [pi_t, cost] = MatchingUtil.match(W_t, options);                      % compute matching
                 % pi_t   = Util.randswap(pi_t, 4);
                 Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 
+                F.normXY(t) = norm(Z.X-Z.Y,'fro');
                 F.obj(t) = cost;
                 F.hamming(t) = Util.hamming(pi_t, old_pi);
                 if isfield(data, 'true_pi')   % compute distance to true permutation.
                     F.hamming(t) = Util.hamming(Util.inverse_perm(pi_t), data.true_pi); 
-                    fprintf('%d), norm=%2.3f\thamming=%f\n',t, F.obj(t), F.hamming(t));
+                    fprintf('%d), cost=%2.3f\thamming=%f\n',t, F.obj(t), F.hamming(t));
                 else
-                    fprintf('%d), norm=%2.3f, hamming change=%d\n',t, F.obj(t), F.hamming(t));
+                    fprintf('%d), cost=%2.3f\thamming_change=%d\n',t, F.obj(t), F.hamming(t));
                 end
                 
                 if F.hamming(t)==0  % fixed point - stopping condition
@@ -63,25 +65,46 @@ classdef GMCCA
         end
         
         function run(maxN)
+            
+            %% OPTIONS
+            weight_type = 'inner';
+            %weight_type = 'dist';
+            T = 20;  % at most 20 iterations
+            K = 0;   % random walk steps
+            lambda = 0; % diffusion rate
+            d = 0;
+            options = GMCCA.makeOptions(weight_type, T, d, K,lambda); 
+            
             %% DATA
             %source.filename = './data/en.ortho.v1_en.syns.v1.mat';
             %target.filename = './data/es.ortho.v1_es.syns.v1.mat';
-            source.filename = './data/FEB3_en.features.10k_en.syns.v1.mat';
-            target.filename = './data/FEB3_es.features.10k_es.syns.v1.mat';
-            
+%             source.filename = './data/FEB3_en.features.10k_en.syns.v1.mat';
+%             target.filename = './data/FEB3_es.features.10k_es.syns.v1.mat';
+            source.filename = './data/FEB6_en.features_space.10k_en.syns.v1.mat';
+            target.filename = './data/FEB6_es.features_space.10k_es.syns.v1.mat';
+            lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
+
+
             source = Common.loadMat(source);
             target = Common.loadMat(target);
             [~, source.pi] = Common.getFreq(source);
             [~, target.pi] = Common.getFreq(target);
             
-            data.X = GMCCA.setup_most_frequent(source, maxN);
-            data.Y = GMCCA.setup_most_frequent(target, maxN);
+            data.X = GMCCA.setup_features(options, source, maxN);
+            data.Y = GMCCA.setup_features(options, target, maxN);
             
             % figure out initial matching.
             % for now, based on edit-distance
-            match = MatchingUtil.init_matching(data.X.words, data.Y.words, 3);
+            match = MatchingUtil.init_matching(data.X.words, data.Y.words, 1);
             data.seed.match = match;
             data.seed.N = length(match.source);
+            
+            
+            %% evaluate edit_distance matching
+            lex   = BilexiconUtil.load(lexicon.filename);
+            gtlex = BilexiconUtil.ground_truth(lex, data.X.words, data.Y.words);
+            matching = GMCCA.getMatching(data.X.words(match.all.source), data.Y.words(match.all.target));
+            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching(:,2:3), match.all.edit_distance);    
             
             [data.X] = GMCCA.fix_matched_words(data.X, match.source);
             [data.Y] = GMCCA.fix_matched_words(data.Y, match.target);
@@ -90,37 +113,44 @@ classdef GMCCA
             data.source = source;
             data.target = target;
             
-            %% OPTIONS
-            weight_type = 'inner';
-            T = 20;  % at most 20 iterations
-            p = 0.7; % start with d that preserves at least p of the eigenmass of X and Y
-            d = max(Util.mass_to_dim(data.X.features, p), Util.mass_to_dim(data.Y.features, p)); % use d correlation dims
-            K = 1;   % random walk steps
-            lambda = 0; % diffusion rate
-            options = GMCCA.makeOptions(weight_type, T, d, K,lambda); 
-            
+            p = 1; % start with d that preserves at least p of the eigenmass of X and Y
+            options.d = min(Util.mass_to_dim(data.X.features, p), Util.mass_to_dim(data.Y.features, p)); % use d correlation dims  
             
             fprintf('rank(X)=%d, rank(Y)=%d\n',rank(data.X.features), rank(data.Y.features));
             F = GMCCA.find_matching(options, data);
             
-            alignment = GMCCA.getAlignment(data.X.words, data.Y.words, F.pi)
+            
+            
+            %% output
+            alignment = GMCCA.getMatching(data.X.words, data.Y.words, F.pi)
+            F.normXY
+            match
         end
         
-        function X = setup_most_frequent(source, maxN)
-            source.pi = source.pi(1:maxN);
-            pi = source.pi;
-            X.features      = source.features(pi,:);
-            X.features(:,1) = log10(X.features(:,1));
-            X.words = source.words(pi);
-            X.G     = Util.to_stochastic_graph(source.G(pi, pi));
+        function X = setup_features(options, source, maxN)
+            [N1,D1] = size(source.features);
+            source.pi   = source.pi(1:maxN);
+            pi          = source.pi;
+            X.features  = source.features(pi,:);
+            X.features(:,1) = log2(X.features(:,1));
+            X.features(:,1) = [];
+            frequent_features = sum(X.features)>40; % find features that appear more than X times
+            X.features = X.features(:, frequent_features);
+            X.words     = source.words(pi);
+            L           = Util.strlen(X.words);
+            X.features  = [log2(L), X.features];
+            X.G         = Util.to_stochastic_graph(source.G(pi, pi));
+            [N2,D2] = size(X.features);
+            
+            fprintf('Setup features from [%d,%d] to [%d,%d].\n', N1,D1, N2,D2);
         end
         
-        function alignment = getAlignment(wordsX, wordsY, pi)
+        function matching = getMatching(wordsX, wordsY, pi)
             N = length(wordsX);
             if nargin < 3
             	pi = 1:N;
             end
-            alignment = [ (mat2cell([1:N]', ones(N,1))),wordsX, wordsY(pi)];
+            matching = [ (mat2cell([1:N]', ones(N,1))),wordsX, wordsY(pi)];
         end
         
         function X = fix_matched_words(X, pi)
@@ -135,7 +165,7 @@ classdef GMCCA
             X.G = X.G(new_order,new_order);
         end
         
-        function recoverd = sanityCheck(seed, noise_coeff, lambda_coeff)
+        function recovered = sanityCheck(seed, noise_coeff, lambda_coeff)
             if nargin == 0
                 seed = 3;
                 noise_coeff = 0.1;
@@ -144,20 +174,22 @@ classdef GMCCA
             rng(seed);
             % create data
             N = 500; 
-            D = 40;
+            D = 400;
             data_type = 1; % 0=mock data with empty graph, 1=mock data with sparse graph
             data = GMCCA.loadMockData(data_type, N, D, noise_coeff); 
             % create options
-            T = 10; % at most 200 iterations
-            d = 30;  % use 30 correlation dims
+            T = 20; % at most 200 iterations
+            d = D;  % use 30 correlation dims
             weight_type = 'inner'; % inner product similarity
-            K = 1;
-            lambda = noise_coeff*10*lambda_coeff;
+            K = 0;
+            lambda = 0;% noise_coeff*10*lambda_coeff;
             options = GMCCA.makeOptions(weight_type, T, d, K, lambda); 
             F=GMCCA.find_matching(options, data);
-            GMCCA.outputAlignment(data.X.words, data.Y.words, F.pi);
+            alignment = GMCCA.getAlignment(data.X.words, data.Y.words, F.pi)
             
-            recoverd = all([data.X.words{:}] == [data.Y.words{F.pi}]);
+            recovered = all([data.X.words{:}] == [data.Y.words{F.pi}]);
+            fprintf('Recovered = %d hamdist=%d\n', recovered, Util.hamming(Util.inverse_perm(F.pi), data.true_pi));
+            F.normXY
         end
         
         function plot_prob_of_recovery()
@@ -199,13 +231,13 @@ classdef GMCCA
         function F = random_rotate_shift(F)
             D = size(F,2);
             [rand_rot,~] = svd(rand(D)); % random rotation
-            rand_mean = rand(1,D);
+            rand_mean = 10*rand(1,D);
             F = F * rand_rot;
             F = bsxfun(@plus, F, rand_mean); % shift randomly.
         end
         
         function data = loadMockData(type, N, D, noise_coeff)
-            data.X.words = mat2cell(1:N,1,ones(N,1));
+            data.X.words = mat2cell(1:N,1,ones(N,1))';
             Z = randn(N, D);         % generate random gaussian data
             if type == 0                             %% Create mock data    
                 data.X.G = zeros(N);                 % create empty graphs.

@@ -14,7 +14,7 @@ function lexsyn2mat(F)
 end
 
 function G = make_synonym_adj(filename, X)
-    G   = zeros(X.N);
+    G   = sparse(zeros(X.N));
     fid = fopen([filename,'.txt']);
     pairs_skipped = 0;
     pair_count    = 0;
@@ -67,12 +67,4 @@ function X=read_features(filename)
         X.id2word.put(n,word);
     end
     X.N = N;
-end
-
-function list = split(s,d)
-    list = {};
-    while (length(s) > 0)
-        [t,s] = strtok(s,d);
-        list = {list{:}, t};
-    end
 end

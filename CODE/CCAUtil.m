@@ -39,12 +39,9 @@ classdef CCAUtil
         
         function Z=getLatent(X,U,M)
             mu = mean(X);
-            %M = eye(size(M));
             Z = M'*U'*X';
             Z = bsxfun(@minus, Z, M'*(U'*mu'))';
         end
     end
-    
-
 end
 

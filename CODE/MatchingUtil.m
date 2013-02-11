@@ -9,39 +9,38 @@ classdef MatchingUtil
     
     methods(Static)        
         function W=makeWeights(options, X, Y, GX, GY)
-            % data will contain fields such as X,Y, GX,GY
             % TODO:
-            % weights as inner product
-            % weights as distances between points.
             % kernelized inner products?
             if isempty(options.weight_type) || strcmpi(options.weight_type, 'inner')
                 % weights are proportional to the inner product of elements
                 U = X * Y';
                 W = U;
-                % TODO: test on stochastic graphs as well.
                 for k=1:options.K,
                     W = W + options.lambda^k*(GX^k)*U*(GY^k)';
                 end
                 W = max(max(W)) - W;
             elseif strcmpi(options.weight_type, 'dist')
-                
+                % no need to subtract since we will look for the minimum matching
+                W = pdist2(X,Y,'euclidean'); 
             end
         end
         
         function match = init_matching(listA, listB, max_dist)
-            % find a good initial matching.
+            % find a good initial matching, based on edit distance.
             NA = length(listA);
             NB = length(listB);
-            W = inf(NA,NB);
             % calculate pairwise edit-distance
-            W = Common.load_editdist_file(listA, listB, max_dist);
+            W = Common.load_editdist_file(listA, listB);
+            min_length = 0;
+            max_length_diff = inf;
             if isempty(W)
+                W = inf(NA,NB);
                 for a=1:NA,
                     for b = 1:NB,
                         word_a = listA{a};
                         word_b = listB{b};
-                        cond_min_length = length(word_a) > 5 && length(word_b) > 5;
-                        cond_length_diff = abs(length(word_a) - length(word_b)) < 3;
+                        cond_min_length = length(word_a) > min_length && length(word_b) > min_length;
+                        cond_length_diff = abs(length(word_a) - length(word_b)) < max_length_diff;
                         if cond_min_length && cond_length_diff % otherwise, skip.
                             W(a,b) = Util.edit_distance_levenshtein(word_a,word_b);
                         end
@@ -51,21 +50,28 @@ classdef MatchingUtil
                     end
                 end
                 
-                Common.save_editdist_file(listA, listB, max_dist, W);
+                Common.save_editdist_file(listA, listB, W);
             end
             % based on the distances, find a good matching.
             [best_match, total_cost] = MatchingUtil.match(W);
             ec = MatchingUtil.edge_cost(best_match, W);
             [sorted_ec, sigma] = sort(ec);
             best_match = best_match(sigma);
-            top = find(sorted_ec>max_dist, 1);
+            top = find(sorted_ec>max_dist, 1)-1;
             % store the indices of the top matches in source and target
+            match.all.source = sigma;
+            match.all.target = best_match;
+            match.all.edit_distance = sorted_ec;
+            
             match.source = sigma(1:top);
             match.target = best_match(1:top);
-            % [listA(match.source)', {listB{match.target}}', (mat2cell(ec(sigma(1:top))', ones(top,1)))]
+            
+            % [listA(match.source), listB(match.target), (mat2cell(sorted_ec(1:top)', ones(top,1)))]
+            % [listA(match.all.source), listB(match.all.target), (mat2cell(sorted_ec', ones(NA,1)))]
         end
         
         function v = edge_cost(pi, cost)
+            % computes the cost of a given edge set pi.
             N = length(pi);
             I = sub2ind(size(cost), 1:N, pi);
             v = cost(I);

@@ -31,8 +31,12 @@ classdef Util
         function dim = mass_to_dim(X, singular_mass)
             % finds the number of dimensions in X
             % that whose mass in terms of singular values is at least p
-            q = svd(X); 
-            dim = find(cumsum(q)/sum(q)>singular_mass,1);
+            if singular_mass == 1
+                dim = size(X,2);
+            else
+                q = svd(X); 
+                dim = find(cumsum(q)/sum(q)>singular_mass,1);
+            end
         end
         
         function d=edit_distance_levenshtein(s,t)
@@ -116,6 +120,21 @@ classdef Util
             g(g==0)=1;
             g = 1./g;       % divide by degree.
             G = sparse(bsxfun(@times, G, g));
+        end
+        
+        function v=strlen(strings)
+            if isstr(strings)
+                v=length(strings);
+            end
+            if iscell(strings) 
+                N = length(strings);
+                v = zeros(N,1);
+                i=1;
+                for I = 1:N
+                    v(i) = length(strings{i});
+                    i = i  +1;
+                end
+            end
         end
     end
 end

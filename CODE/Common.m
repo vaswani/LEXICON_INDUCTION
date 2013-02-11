@@ -50,16 +50,16 @@ classdef Common
             end
         end
         
-        function filename = to_editdist_filename(listA, listB, max_dist)
+        function filename = to_editdist_filename(listA, listB)
             % make a filename basedon the lists.
             hashA = Common.str2hash([listA{:}]); % hash the list to a number
             hashB = Common.str2hash([listB{:}]);
             N = length(listA);
-            filename = ['cache/ed_A=',num2str(hashA), '_B=', num2str(hashB), '_N=',num2str(N), '_maxdist=',num2str(max_dist), '.mat'];
+            filename = ['cache/ed_A=',num2str(hashA), '_B=', num2str(hashB), '_N=',num2str(N), '.mat'];
         end
         
-        function W = load_editdist_file(listA, listB, max_dist)
-            filename = Common.to_editdist_filename(listA, listB, max_dist);
+        function W = load_editdist_file(listA, listB)
+            filename = Common.to_editdist_filename(listA, listB);
             % load if exists.
             if exist(filename, 'file')
                 fprintf('Loaded edit distance file "%s".\n', filename);
@@ -70,8 +70,8 @@ classdef Common
             end
         end
         
-        function save_editdist_file(listA, listB, max_dist, W)
-            filename = Common.to_editdist_filename(listA, listB, max_dist);
+        function save_editdist_file(listA, listB, W)
+            filename = Common.to_editdist_filename(listA, listB);
             save(filename, 'W');
             fprintf('Saved edit distance file "%s".\n', filename);
         end
