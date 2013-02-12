@@ -65,7 +65,7 @@ classdef GMCCA
         end
         
         function run(maxN)
-            
+
             %% OPTIONS
             weight_type = 'inner';
             %weight_type = 'dist';
