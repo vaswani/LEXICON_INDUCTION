@@ -61,7 +61,6 @@ classdef BilexiconUtil
                 HS.target.add(target_words{n});            
             end
                             
-
             % remove words from the lexicon if they don't appear in A.
             gtlex.s2t = BilexiconUtil.remove_missing_words(lex.s2t, HS.source, HS.target);
             gtlex.t2s = BilexiconUtil.remove_missing_words(lex.t2s, HS.target, HS.source);
@@ -139,7 +138,7 @@ classdef BilexiconUtil
                         if BilexiconUtil.is_valid_s2t_match(gtlex, source_word, target_word)
                             tp = tp + 1; % yes we do!
                         else
-                             tp = tp;
+                            tp = tp;
                         end
                     end
                 end

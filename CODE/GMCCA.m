@@ -29,18 +29,18 @@ classdef GMCCA
                 W_t    = MatchingUtil.makeWeights(options, Z.X, Z.Y, data.X.G, data.Y.G);       % compute weights 
                 old_pi = pi_t;
                 %figure; imagesc(W_t(:, pi_t));
-                [pi_t, cost] = MatchingUtil.match(W_t, options);                      % compute matching
+                [pi_t, F.cost(t)] = MatchingUtil.match(W_t, options);                      % compute matching
                 % pi_t   = Util.randswap(pi_t, 4);
                 Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 
-                F.normXY(t) = norm(Z.X-Z.Y,'fro');
-                F.obj(t) = cost;
-                F.hamming(t) = Util.hamming(pi_t, old_pi);
+                % log and output
+                F.normXY(t) = norm(Z.X-Z.Y,'fro')^2;
                 if isfield(data, 'true_pi')   % compute distance to true permutation.
                     F.hamming(t) = Util.hamming(Util.inverse_perm(pi_t), data.true_pi); 
-                    fprintf('%d), cost=%2.3f\thamming=%f\n',t, F.obj(t), F.hamming(t));
+                    fprintf('%d), cost=%2.3f\thamming=%f\n',t, F.cost(t), F.hamming(t));
                 else
-                    fprintf('%d), cost=%2.3f\thamming_change=%d\n',t, F.obj(t), F.hamming(t));
+                    F.hamming(t) = Util.hamming(pi_t, old_pi);
+                    fprintf('%d), cost=%2.3f\thamming_change=%d\n',t, F.cost(t), F.hamming(t));
                 end
                 
                 if F.hamming(t)==0  % fixed point - stopping condition
@@ -65,7 +65,7 @@ classdef GMCCA
         end
         
         function run(maxN)
-
+            
             %% OPTIONS
             weight_type = 'inner';
             %weight_type = 'dist';
@@ -119,8 +119,6 @@ classdef GMCCA
             fprintf('rank(X)=%d, rank(Y)=%d\n',rank(data.X.features), rank(data.Y.features));
             F = GMCCA.find_matching(options, data);
             
-            
-            
             %% output
             alignment = GMCCA.getMatching(data.X.words, data.Y.words, F.pi)
             F.normXY
@@ -131,9 +129,8 @@ classdef GMCCA
             [N1,D1] = size(source.features);
             source.pi   = source.pi(1:maxN);
             pi          = source.pi;
-            X.features  = source.features(pi,:);
-            X.features(:,1) = log2(X.features(:,1));
-            X.features(:,1) = [];
+            X.features  = source.features(pi,:); % sort words by frequency
+            X.features(:,1) = log2(X.features(:,1)); % replce frequency to log2(freq)
             frequent_features = sum(X.features)>40; % find features that appear more than X times
             X.features = X.features(:, frequent_features);
             X.words     = source.words(pi);
@@ -154,12 +151,12 @@ classdef GMCCA
         end
         
         function X = fix_matched_words(X, pi)
+            % move seed matched words to the beginning.
             Nw = length(X.words);
             
             rest = setdiff(1:Nw, pi);
             new_order = [pi, rest];
             
-            % move matched words to the beginning.
             X.words = X.words(new_order);
             X.features = X.features(new_order,:);
             X.G = X.G(new_order,new_order);
