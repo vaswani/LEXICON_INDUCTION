@@ -45,5 +45,5 @@ for word in nouns:
     for i in range(k):
         p_argmin,p_min = distances_heap.pop_smallest()
         #print word,',',p_argmin,',',p_min
-        print "%s,%s,%s"%(word,p_argmin,repr(p_min))
+        print "_%s_,_%s_,%s"%(word,p_argmin,repr(p_min))
     
