@@ -31,7 +31,7 @@ k = int(sys.argv[3])
 #first create the heap dictionary 
 
 all_pair_distances = {}
-for word in nouns:
+for word in embeddings_edictionary:
     distances = {}
     for i in embeddings_dictionary:
         #print 'word i',i
