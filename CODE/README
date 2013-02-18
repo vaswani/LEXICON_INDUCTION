@@ -1,8 +1,39 @@
-to run the sanity check in matlab, simply type
+Pipeline - from data generation to results
+------------------------------------------
+
+Node: Data formats: 
+if not mentioned otherwise, the format of all the data files is csv.
+The function lex
+
+* Data Preparation
+To run the matching function, files need to be prepared
+1) source language data - containing a graph on words and word features.
+2) target language data - same as above.
+3) bilexicon ground truth (i.e., dictionary) to compare results against.
+
+To prepare the language data (1&2), use the script makeMat.m (in the scripts library)
+or directly via the function in lexsyn2mat.m
+
+its input is two pairs of file names, per each languageone for the language features, and another for the graph (e.g., synonym graph on the words).
+the language feature file should be in the format
+
+
+2. Matching - running GMCCA.run() and tuning hyperparamters.
+
+
+
+
+Sanity Check
+------------
+The sanity check function in GMCCA first generates data according to
+the generative story of matching CCA and then tries to recover it.
+
+To run the sanity check in matlab, simply type in matlab
 
 GMCCA.sanityCheck();
 
-A correct output look something like:
+A correct output should look as follows:
+
 ####### start output #######
 Elapsed time is 0.549377 seconds.
 1), norm=2767.203	hamming=436.000000
@@ -19,7 +50,7 @@ alignment =
     [  1]    [  1]
     [  2]    [  2]
     [  3]    [  3]
-  …
+ ...
     [500]    [500]
 
 ####### end output #######
