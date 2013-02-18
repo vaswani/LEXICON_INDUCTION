@@ -29,7 +29,7 @@ classdef GMCCA
                 W_t    = MatchingUtil.makeWeights(options, Z.X, Z.Y, data.X.G, data.Y.G);       % compute weights 
                 old_pi = pi_t;
                 %figure; imagesc(W_t(:, pi_t));
-                [pi_t, F.cost(t)] = MatchingUtil.match(W_t, options);                      % compute matching
+                [pi_t, F.cost(t), F.edge_cost{t}] = MatchingUtil.match(W_t, options);                      % compute matching
                 % pi_t   = Util.randswap(pi_t, 4);
                 Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 
@@ -64,14 +64,16 @@ classdef GMCCA
             options.use_single = 0;
         end
         
-        function run(maxN)
+        function run(exp_id, maxN)
+            % exp_id - experiment id, used in output filenames.
+            % maxN - the maximum number of samples to consider.
             
             %% OPTIONS
             weight_type = 'inner';
             %weight_type = 'dist';
             T = 20;  % at most 20 iterations
-            K = 0;   % random walk steps
-            lambda = 0; % diffusion rate
+            K = 1;   % random walk steps
+            lambda = 1; % diffusion rate
             d = 0;
             options = GMCCA.makeOptions(weight_type, T, d, K,lambda); 
             
@@ -98,13 +100,14 @@ classdef GMCCA
             match = MatchingUtil.init_matching(data.X.words, data.Y.words, 1);
             data.seed.match = match;
             data.seed.N = length(match.source);
-            
+            results.edit_distance = [data.X.words(match.all.source), data.Y.words(match.all.target), (mat2cell(match.all.edit_distance', ones(maxN,1)))];
+            Common.outputCSV(exp_id,'edit_distance', results.edit_distance);
             
             %% evaluate edit_distance matching
             lex   = BilexiconUtil.load(lexicon.filename);
             gtlex = BilexiconUtil.ground_truth(lex, data.X.words, data.Y.words);
-            matching = GMCCA.getMatching(data.X.words(match.all.source), data.Y.words(match.all.target));
-            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching(:,2:3), match.all.edit_distance);    
+            matching.edit_dist = GMCCA.getMatching(data.X.words(match.all.source), data.Y.words(match.all.target));
+            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching.edit_dist(:,2:3), match.all.edit_distance);    
             
             [data.X] = GMCCA.fix_matched_words(data.X, match.source);
             [data.Y] = GMCCA.fix_matched_words(data.Y, match.target);
@@ -120,7 +123,9 @@ classdef GMCCA
             F = GMCCA.find_matching(options, data);
             
             %% output
-            alignment = GMCCA.getMatching(data.X.words, data.Y.words, F.pi)
+            matching.mcca = GMCCA.getMatching(data.X.words, data.Y.words, F.pi)
+            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching.mcca(:,2:3), F.edge_cost{end});    
+            
             F.normXY
             match
         end

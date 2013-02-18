@@ -32,3 +32,11 @@ CODE/cache/ed_A=3540336041_B=530634956_N=500.mat
 CODE/cache/ed_A=656704790_B=1428960497_N=2000_maxdist=1.mat
 
 CODE/cache/ed_A=656704790_B=1428960497_N=2000_maxdist=2.mat
+
+CODE/matching_1.txt
+
+*.txt
+
+GRAPHS/graph.english
+
+GRAPHS/graph.spanish

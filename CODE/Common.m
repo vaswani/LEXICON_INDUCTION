@@ -7,7 +7,6 @@ classdef Common
             load(S.filename); % should contain X
         end
         
-        
         function [P, pi] = getFreq(X)
             freq = X.features(:,1);
             [sorted, pi] = sort(freq, 'descend');
@@ -74,6 +73,27 @@ classdef Common
             filename = Common.to_editdist_filename(listA, listB);
             save(filename, 'W');
             fprintf('Saved edit distance file "%s".\n', filename);
+        end
+        
+        function outputCSV(exp_id, mtype, A)
+            filename = sprintf('output/matching_exp_id=%d_type=%s.txt', exp_id, mtype);
+            fid = fopen(filename,'w');
+            [N,D] = size(A);
+            for n=1:N,
+                str = '';
+                for d=1:D,
+                    v = A{n,d};
+                    if ~ischar(v)
+                        v = num2str(v);
+                    end
+                    str = [str, ',', v];
+                end
+                str = str(2:end);
+                str = regexprep(str, '%', '%%');
+                fprintf(fid,[str, '\n']);
+            end
+            
+            fclose(fid);
         end
     end
 end

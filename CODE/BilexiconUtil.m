@@ -119,8 +119,8 @@ classdef BilexiconUtil
             % returns precision, recall and F1 scores.
             minWeight = min(weights);
             maxWeights = max(weights);
-            
-            K = 5;
+            %[matching, mat2cell(weights', ones(length(weights),1))]
+            K = 30;
             range = linspace(minWeight,maxWeights,K);
             M = gtlex.s2t.size(); % we use the s2t mapping as the reference (practically s should be English, for which words are easy to obtain).
             for r = 1:length(range)-1,
@@ -146,7 +146,9 @@ classdef BilexiconUtil
                 scores.precision(r) = tp/Nr;    % Nr=(tp+fp)=# of retrieved matchings
                 scores.recall(r)    = tp/M;     % M=(tp+fn) =# of relevant matchings.
                 scores.F1(r) = BilexiconUtil.F1(scores.precision(r), scores.recall(r));
+                scores.R(r)  = size(sub_matching,1);
             end
+            [scores.N/M;scores.precision; scores.recall]*100
         end
         
         function b = is_valid_s2t_match(gtlex, source_word, target_word)
@@ -179,25 +181,25 @@ classdef BilexiconUtil
             % A4 -- B2_0
             
             B = {
-                'big', 'grande';
-                'the', 'el';
-                'the', 'la';
-                'the', 'un';
-                'thin', 'delgado0';
-                'thin', 'delgado1';
-                'city', 'ciudad';
-                'country', 'pais';
-                'beautiful', 'hermosa';
+                '_big_', '_grande_';
+                '_the_', '_el_';
+                '_the_', '_la_';
+                '_the_', '_un_';
+                '_thin_', '_delgado0_';
+                '_thin_', '_delgado1_';
+                '_city_', '_ciudad_';
+                '_country_', '_pais_';
+                '_beautiful_', '_hermosa_';
                 }
             bilex = BilexiconUtil.parseLexicon(B);
             
             matching = {
-                'big', 'delgado1';
-                'city', 'el';
-                'thin', 'delgado0';
-                'country', 'hermosa';
-                'beautiful', 'pais';
-                'unmatched', 'unmatched'
+                '_big_', '_delgado1_';
+                '_city_', '_el_';
+                '_thin_', '_delgado0_';
+                '_country_', '_hermosa_';
+                '_beautiful_', '_pais_';
+                '_unmatched_', '_unmatched_'
                 }
             
             weights = [1,2,3,4,5];

@@ -77,7 +77,7 @@ classdef MatchingUtil
             v = cost(I);
         end
         
-        function [pi, cost]=match(W, options)
+        function [pi, cost, edge_cost] = match(W, options)
             % calls lapjv to compute the **minimum** weighted matching
             if nargin < 2
                 resolution = 1e-4;
@@ -85,8 +85,8 @@ classdef MatchingUtil
                 resolution = 1e-4;%max(10*0.5^options.t,1);
             end
             [pi, cost] = MatchingUtil.lapjv(W, resolution);
-            ec = MatchingUtil.edge_cost(pi, W);
-            if ~isinf(cost) && ~(sum(ec)-cost < 1e-8);
+            edge_cost = MatchingUtil.edge_cost(pi, W);
+            if ~isinf(cost) && ~(sum(edge_cost)-cost < 1e-8);
                 keyboard;
             end
         end
