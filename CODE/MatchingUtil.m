@@ -9,20 +9,45 @@ classdef MatchingUtil
     
     methods(Static)        
         function W=makeWeights(options, X, Y, GX, GY)
-            % TODO:
-            % kernelized inner products?
-            if isempty(options.weight_type) || strcmpi(options.weight_type, 'inner')
-                % weights are proportional to the inner product of elements
+            N = size(GX,1);
+            
+%             UX = (eye(N) - options.lambda*GX) \ X;
+%             UY = (eye(N) - options.lambda*GY) \ Y;
+%             if strcmpi(options.weight_type, 'inner')
+%                 W = UX*UY';
+%                 W = max(W(:)) - W;
+%             else
+%                 W = pdist2(UX,UY,'euclidean');
+%             end
+             if strcmpi(options.weight_type, 'inner')
                 U = X * Y';
                 W = U;
+                % use graph information
                 for k=1:options.K,
                     W = W + options.lambda^k*(GX^k)*U*(GY^k)';
                 end
-                W = max(max(W)) - W;
-            elseif strcmpi(options.weight_type, 'dist')
-                % no need to subtract since we will look for the minimum matching
-                W = pdist2(X,Y,'euclidean'); 
-            end
+                W = max(W(:)) - W;
+             elseif strcmpi(options.weight_type, 'dist')
+                 U = pdist2(X,Y,'euclidean');
+                 W = U;
+                 for k=1:options.K,
+                     W = W + options.lambda^k*pdist2(GX^k*X,GY^k*Y);
+                 end
+             end
+             
+
+%             if isempty(options.weight_type) || strcmpi(options.weight_type, 'inner')
+%                 % weights are proportional to the inner product of elements
+%                 U = X * Y';
+%                 W = U;
+%                 for k=1:options.K,
+%                     W = W + options.lambda^k*(GX^k)*U*(GY^k)';
+%                 end
+%                 W = max(W(:)) - W;
+%             elseif strcmpi(options.weight_type, 'dist')
+%                 % no need to subtract since we will look for the minimum matching
+%                 W = pdist2(X,Y,'euclidean'); 
+%             end
         end
         
         function match = init_matching(listA, listB, max_dist)
@@ -53,15 +78,15 @@ classdef MatchingUtil
                 Common.save_editdist_file(listA, listB, W);
             end
             % based on the distances, find a good matching.
-            [best_match, total_cost] = MatchingUtil.match(W);
-            ec = MatchingUtil.edge_cost(best_match, W);
+            [best_match, total_cost, ec] = MatchingUtil.match(W);
             [sorted_ec, sigma] = sort(ec);
             best_match = best_match(sigma);
             top = find(sorted_ec>max_dist, 1)-1;
             % store the indices of the top matches in source and target
             match.all.source = sigma;
             match.all.target = best_match;
-            match.all.edit_distance = sorted_ec;
+            match.all.weights = sorted_ec;
+            match.all.pi = [1:NA]';
             
             match.source = sigma(1:top);
             match.target = best_match(1:top);

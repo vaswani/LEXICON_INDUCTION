@@ -112,19 +112,26 @@ classdef BilexiconUtil
                 beta = 1;
             end
             denom = beta^2*precision + recall;
-            score = (1+beta^2)*(precision*recall)/denom;
+            score = (1+beta^2).*(precision.*recall)./denom;
         end
         
-        function scores = getF1scores(gtlex, matching, weights)
+        function scores = getF1scores(gtlex, matching, weights, options)
             % returns precision, recall and F1 scores.
             minWeight = min(weights);
             maxWeights = max(weights);
             %[matching, mat2cell(weights', ones(length(weights),1))]
-            K = 30;
-            range = linspace(minWeight,maxWeights,K);
+            
             M = gtlex.s2t.size(); % we use the s2t mapping as the reference (practically s should be English, for which words are easy to obtain).
+            % sort matching in ascending order.
+            N = size(matching,1);
+            assert(length(weights) == N);
+            [weights,pi] = sort(weights);
+            matching = matching(pi, :);
+
+            K = 11;
+            range = linspace(1,N,K);
             for r = 1:length(range)-1,
-                I = weights<=range(r+1);
+                I = 1:range(r+1);
                 sub_matching = matching(I,:);
                 
                 tp = 0; % will count the edges in gtlex that exist in the matching
@@ -142,13 +149,61 @@ classdef BilexiconUtil
                         end
                     end
                 end
-                scores.N(r) = Nr;
-                scores.precision(r) = tp/Nr;    % Nr=(tp+fp)=# of retrieved matchings
-                scores.recall(r)    = tp/M;     % M=(tp+fn) =# of relevant matchings.
-                scores.F1(r) = BilexiconUtil.F1(scores.precision(r), scores.recall(r));
-                scores.R(r)  = size(sub_matching,1);
+                scores.N0(r) = Nr;
+                scores.P0(r) = tp/Nr;    % Nr = (tp+fp) = "# of retrieved matchings"
+                scores.Re0(r)    = tp/M;     % M  = (tp+fn) = "# of relevant matchings"
+                scores.F0(r) = BilexiconUtil.F1(scores.P0(r), scores.Re0(r));
+                scores.R0(r)  = size(sub_matching,1);
+                scores.M0 = M;
+            end 
+            
+            C = zeros(N,3);
+            for n=1:N,
+                source_word = matching{n,1};
+                target_word = matching{n,2};
+                C(n,1) = 1;
+                if gtlex.s2t.containsKey(source_word) % some match exists for this source word
+                    C(n,2) = 1;
+                    C(n,3) = BilexiconUtil.is_valid_s2t_match(gtlex, source_word, target_word);
+                end
             end
-            [scores.N/M;scores.precision; scores.recall]*100
+            C = cumsum(C);
+            
+            scores.M = M;
+            scores.precision = C(:,3) ./ C(:,2);
+            scores.recall = C(:,3) ./ M;;
+            scores.F1 = BilexiconUtil.F1(scores.precision,scores.recall);
+            scores.N = C(:,2);
+            scores.R = C(:,1);
+        end
+        
+        function outputScores(scores, options, title)
+            fprintf('Results for %s:\n', title);
+            fprintf('===============\n');
+            %options
+            % find precisions based on recall levels
+            i05 = find(scores.recall>=0.05,1);
+            i10 = find(scores.recall>=0.1,1);
+            i20 = find(scores.recall>=0.20,1);
+            i25 = find(scores.recall>=0.25,1);
+            i33 = find(scores.recall>=0.33,1);
+            i40 = find(scores.recall>=0.40,1);
+            i50 = find(scores.recall>=0.50,1);
+            i60 = find(scores.recall>=0.60,1);
+            
+            I = unique([i05, i10, i20, i25, i33, i40, i50, i60])
+            
+            N  = scores.R(I);
+            P  = scores.precision(I);
+            R  = scores.recall(I);
+            F1 = scores.F1(I);
+            fprintf('Scores: [wtype="%s", K=%d, lambda=%2.2f]\n', options.weight_type, options.K, options.lambda);
+            fprintf('=======\n');
+            fprintf('Ra'); fprintf('\t% 3.2f',100*N/max(scores.R)); fprintf('\n');
+            fprintf('F1'); fprintf('\t% 3.2f', 100*F1); fprintf('\n');
+            fprintf('Pr'); fprintf('\t% 3.2f', 100*P);  fprintf('\n');
+            fprintf('Re'); fprintf('\t% 3.2f', 100*R);  fprintf('\n');
+            fprintf('=======\n');
         end
         
         function b = is_valid_s2t_match(gtlex, source_word, target_word)
@@ -202,11 +257,13 @@ classdef BilexiconUtil
                 '_unmatched_', '_unmatched_'
                 }
             
-            weights = [1,2,3,4,5];
+            weights = 1:size(matching,1);
             
             gtlex = BilexiconUtil.ground_truth(bilex, matching(:,1), matching(:,2));
             scores = BilexiconUtil.getF1scores(gtlex, matching, weights);
             plot(scores.F1);
+            
+            BilexiconUtil.outputScores(scores, [], 'test run');
         end
     end
     

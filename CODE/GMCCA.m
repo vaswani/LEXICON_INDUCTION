@@ -6,6 +6,7 @@ classdef GMCCA
             % computes the within graph aided mCCA between X and Y.
             % returns pi, the permutation that matches samples (rows) of X
             % with rows of Y.
+            start = tic();
             if options.use_single == 1
                 data.X.features = single(data.X.features); % work w/ single precision.
                 data.Y.features = single(data.Y.features);
@@ -14,7 +15,7 @@ classdef GMCCA
             [NY,DY] = size(data.Y.features);
             assert(NX==size(data.X.G,1));
             assert(NY==size(data.Y.G,1));
-            
+            start = tic;
             % TODO: 
             % Should initialize with something reasonable. not the
             % identity.
@@ -52,7 +53,9 @@ classdef GMCCA
 %             if any(F.hamming ~= inf)
 %                 plot(F.hamming);
 %             end
+            F.end = toc(start);
             F.pi = pi_t;
+            F.weights = F.edge_cost{end};
         end
         
         function options = makeOptions(weight_type, T, d, K, lambda)
@@ -68,12 +71,13 @@ classdef GMCCA
             % exp_id - experiment id, used in output filenames.
             % maxN - the maximum number of samples to consider.
             
-            %% OPTIONS
-            weight_type = 'inner';
-            %weight_type = 'dist';
+            %% OPTIONS            
+            fprintf('------------- Starting -----------\n');
+            weight_type = 'dist'; % 'inner or 'dist'
+            
             T = 20;  % at most 20 iterations
             K = 1;   % random walk steps
-            lambda = 1; % diffusion rate
+            lambda = 0.1; % diffusion rate
             d = 0;
             options = GMCCA.makeOptions(weight_type, T, d, K,lambda); 
             
@@ -82,10 +86,9 @@ classdef GMCCA
             %target.filename = './data/es.ortho.v1_es.syns.v1.mat';
 %             source.filename = './data/FEB3_en.features.10k_en.syns.v1.mat';
 %             target.filename = './data/FEB3_es.features.10k_es.syns.v1.mat';
-            source.filename = './data/FEB6_en.features_space.10k_en.syns.v1.mat';
-            target.filename = './data/FEB6_es.features_space.10k_es.syns.v1.mat';
+            source.filename = './data/FEB6_en.features_space.10k_en.syns.v2.mat';
+            target.filename = './data/FEB6_es.features_space.10k_es.syns.v2.mat';
             lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
-
 
             source = Common.loadMat(source);
             target = Common.loadMat(target);
@@ -100,14 +103,15 @@ classdef GMCCA
             match = MatchingUtil.init_matching(data.X.words, data.Y.words, 1);
             data.seed.match = match;
             data.seed.N = length(match.source);
-            results.edit_distance = [data.X.words(match.all.source), data.Y.words(match.all.target), (mat2cell(match.all.edit_distance', ones(maxN,1)))];
+            results.edit_distance = [data.X.words(match.all.source), data.Y.words(match.all.target), (mat2cell(match.all.weights', ones(maxN,1)))];
             Common.outputCSV(exp_id,'edit_distance', results.edit_distance);
             
             %% evaluate edit_distance matching
             lex   = BilexiconUtil.load(lexicon.filename);
             gtlex = BilexiconUtil.ground_truth(lex, data.X.words, data.Y.words);
-            matching.edit_dist = GMCCA.getMatching(data.X.words(match.all.source), data.Y.words(match.all.target));
-            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching.edit_dist(:,2:3), match.all.edit_distance);    
+            matching.edit_dist = GMCCA.getMatching(data.X.words(match.all.source), data.Y.words(match.all.target), match.all);
+            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching.edit_dist(:,2:3), cell2mat(matching.edit_dist(:,4)));
+            BilexiconUtil.outputScores(scores.edit_dist, options, 'Edit Distance');
             
             [data.X] = GMCCA.fix_matched_words(data.X, match.source);
             [data.Y] = GMCCA.fix_matched_words(data.Y, match.target);
@@ -123,36 +127,45 @@ classdef GMCCA
             F = GMCCA.find_matching(options, data);
             
             %% output
-            matching.mcca = GMCCA.getMatching(data.X.words, data.Y.words, F.pi)
-            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching.mcca(:,2:3), F.edge_cost{end});    
-            
-            F.normXY
-            match
+            matching.mcca = GMCCA.getMatching(data.X.words, data.Y.words, F)
+            scores.mcca = BilexiconUtil.getF1scores(gtlex, matching.mcca(:,2:3), cell2mat(matching.mcca(:,4)));
+            BilexiconUtil.outputScores(scores.mcca, options, 'MCCA');
+            plot(F.normXY);
+            fprintf('time: %2.2f\n', F.end);
+            %match
         end
         
         function X = setup_features(options, source, maxN)
+            % pick the top maxN most frequent words
             [N1,D1] = size(source.features);
             source.pi   = source.pi(1:maxN);
             pi          = source.pi;
             X.features  = source.features(pi,:); % sort words by frequency
-            X.features(:,1) = log2(X.features(:,1)); % replce frequency to log2(freq)
-            frequent_features = sum(X.features)>40; % find features that appear more than X times
-            X.features = X.features(:, frequent_features);
             X.words     = source.words(pi);
+            
+            logFr       = log2(X.features(:,1)); % replce frequency to log2(freq)
             L           = Util.strlen(X.words);
-            X.features  = [log2(L), X.features];
+            X.features(:,1) = [];
+            
+            frequent    = sum(X.features > 0) >  40; % find features that appear more than X times
+            sparse      = sum(X.features > 0) <= 40; % find features that appear more than X times
+            X.features  = [X.features(:, frequent), sum(X.features(:,sparse),2)]; % take frequent features and collapse rare
+            % normalize features
+            %V = sqrt(sum(X.features.^2,2));
+            %X.features = bsxfun(@rdivide, X.features, V);
+            
+            X.features  = [logFr, log2(L), X.features];
             X.G         = Util.to_stochastic_graph(source.G(pi, pi));
             [N2,D2] = size(X.features);
             
             fprintf('Setup features from [%d,%d] to [%d,%d].\n', N1,D1, N2,D2);
         end
         
-        function matching = getMatching(wordsX, wordsY, pi)
+        function matching = getMatching(wordsX, wordsY, F)
             N = length(wordsX);
-            if nargin < 3
-            	pi = 1:N;
-            end
-            matching = [ (mat2cell([1:N]', ones(N,1))),wordsX, wordsY(pi)];
+            indices = (mat2cell([1:N]', ones(N,1)));
+            weights = (mat2cell(F.weights', ones(N,1)));
+            matching = [ indices,wordsX, wordsY(F.pi), weights];
         end
         
         function X = fix_matched_words(X, pi)
@@ -176,7 +189,7 @@ classdef GMCCA
             rng(seed);
             % create data
             N = 500; 
-            D = 400;
+            D = 40;
             data_type = 1; % 0=mock data with empty graph, 1=mock data with sparse graph
             data = GMCCA.loadMockData(data_type, N, D, noise_coeff); 
             % create options
@@ -187,7 +200,7 @@ classdef GMCCA
             lambda = 0;% noise_coeff*10*lambda_coeff;
             options = GMCCA.makeOptions(weight_type, T, d, K, lambda); 
             F=GMCCA.find_matching(options, data);
-            alignment = GMCCA.getAlignment(data.X.words, data.Y.words, F.pi)
+            alignment = GMCCA.getMatching(data.X.words, data.Y.words, F.pi)
             
             recovered = all([data.X.words{:}] == [data.Y.words{F.pi}]);
             fprintf('Recovered = %d hamdist=%d\n', recovered, Util.hamming(Util.inverse_perm(F.pi), data.true_pi));

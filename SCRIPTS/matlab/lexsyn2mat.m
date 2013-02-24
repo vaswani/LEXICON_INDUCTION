@@ -41,7 +41,7 @@ function G = make_synonym_adj(filename, X)
             pairs_skipped = pairs_skipped + 1;
         else
             if G(id1,id2)
-                fprintf('words already exist %s=%d %s=%d.\n', word1, id1, word2, id2);
+                fprintf('words already exist "%s"=%d "%s"=%d.\n', word1, id1, word2, id2);
             end
             G(id1,id2) = 1;
         end
