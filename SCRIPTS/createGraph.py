@@ -27,8 +27,8 @@ for line in open(sys.argv[2]):
 #sys.exit()
 k = int(sys.argv[3])
 
-print 'size embeddings dictionary',len(embeddings_dictionary)
-raw_input()
+#print 'size embeddings dictionary',len(embeddings_dictionary)
+#raw_input()
 #first create the heap dictionary 
 
 all_pair_distances = {}
