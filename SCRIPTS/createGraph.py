@@ -32,7 +32,7 @@ k = int(sys.argv[3])
 #first create the heap dictionary 
 
 all_pair_distances = {}
-for word in embeddings_edictionary:
+for word in embeddings_dictionary:
     distances = {}
     for i in embeddings_dictionary:
         #print 'word i',i
