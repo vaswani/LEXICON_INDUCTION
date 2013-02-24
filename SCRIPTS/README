@@ -23,3 +23,9 @@ python createGraph.py <nouns_file> <embeddings_file> <k>
 nouns file : 1 noun per line 
 embeddings file : word \tab embeddings
 k = num of neighbors
+
+usage for getFeaturesFromEmbeddings.py:
+
+python getFeaturesFromEmbeddings.py ../DATA/en-es/europarl-v7.es-en.en.tok.100k.tags.nouns.top10k ../EMBEDDINGS/en-es/embeddings.europarl-v7.es-en.es
+
+this script creates the input features using word embeddings instead of the standard sparse features
