@@ -77,7 +77,7 @@ classdef GMCCA
             
             T = 20;  % at most 20 iterations
             K = 1;   % random walk steps
-            lambda = 0.1; % diffusion rate
+            lambda = 0.2; % diffusion rate
             d = 0;
             options = GMCCA.makeOptions(weight_type, T, d, K,lambda); 
             
