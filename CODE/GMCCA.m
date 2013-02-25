@@ -77,7 +77,7 @@ classdef GMCCA
             
             T = 20;  % at most 20 iterations
             K = 1;   % random walk steps
-            lambda = 0.2; % diffusion rate
+            lambda = 0.25; % diffusion rate
             d = 0;
             options = GMCCA.makeOptions(weight_type, T, d, K,lambda); 
             
@@ -110,7 +110,7 @@ classdef GMCCA
             lex   = BilexiconUtil.load(lexicon.filename);
             gtlex = BilexiconUtil.ground_truth(lex, data.X.words, data.Y.words);
             matching.edit_dist = GMCCA.getMatching(data.X.words(match.all.source), data.Y.words(match.all.target), match.all);
-            scores.edit_dist = BilexiconUtil.getF1scores(gtlex, matching.edit_dist(:,2:3), cell2mat(matching.edit_dist(:,4)));
+            scores.edit_dist   = BilexiconUtil.getF1scores(gtlex, matching.edit_dist(:,2:3), cell2mat(matching.edit_dist(:,4)));
             BilexiconUtil.outputScores(scores.edit_dist, options, 'Edit Distance');
             
             [data.X] = GMCCA.fix_matched_words(data.X, match.source);
@@ -130,7 +130,7 @@ classdef GMCCA
             matching.mcca = GMCCA.getMatching(data.X.words, data.Y.words, F)
             scores.mcca = BilexiconUtil.getF1scores(gtlex, matching.mcca(:,2:3), cell2mat(matching.mcca(:,4)));
             BilexiconUtil.outputScores(scores.mcca, options, 'MCCA');
-            plot(F.normXY);
+            %plot(F.normXY);
             fprintf('time: %2.2f\n', F.end);
             %match
         end
@@ -154,7 +154,7 @@ classdef GMCCA
             %V = sqrt(sum(X.features.^2,2));
             %X.features = bsxfun(@rdivide, X.features, V);
             
-            X.features  = [logFr, log2(L), X.features];
+            %X.features  = [logFr, log2(L), X.features];
             X.G         = Util.to_stochastic_graph(source.G(pi, pi));
             [N2,D2] = size(X.features);
             
@@ -180,31 +180,32 @@ classdef GMCCA
             X.G = X.G(new_order,new_order);
         end
         
-        function recovered = sanityCheck(seed, noise_coeff, lambda_coeff)
+        function recovered = sanityCheck(seed, data_noise, graph_noise, lambda_coeff, K)
             if nargin == 0
                 seed = 3;
-                noise_coeff = 0.1;
+                data_noise = 0.2;
+                graph_noise = 0.2;
                 lambda_coeff = 1;
+                K = 0;
             end
             rng(seed);
             % create data
-            N = 500; 
-            D = 40;
+            N = 2000; 
+            D = 200;
             data_type = 1; % 0=mock data with empty graph, 1=mock data with sparse graph
-            data = GMCCA.loadMockData(data_type, N, D, noise_coeff); 
+            data = GMCCA.loadMockData(data_type, N, D, data_noise, graph_noise); 
             % create options
             T = 20; % at most 200 iterations
             d = D;  % use 30 correlation dims
             weight_type = 'inner'; % inner product similarity
-            K = 0;
-            lambda = 0;% noise_coeff*10*lambda_coeff;
+            lambda = lambda_coeff / data_noise;
             options = GMCCA.makeOptions(weight_type, T, d, K, lambda); 
             F=GMCCA.find_matching(options, data);
-            alignment = GMCCA.getMatching(data.X.words, data.Y.words, F.pi)
+            alignment = GMCCA.getMatching(data.X.words, data.Y.words, F)
             
             recovered = all([data.X.words{:}] == [data.Y.words{F.pi}]);
             fprintf('Recovered = %d hamdist=%d\n', recovered, Util.hamming(Util.inverse_perm(F.pi), data.true_pi));
-            F.normXY
+            %F.normXY
         end
         
         function plot_prob_of_recovery()
@@ -251,28 +252,30 @@ classdef GMCCA
             F = bsxfun(@plus, F, rand_mean); % shift randomly.
         end
         
-        function data = loadMockData(type, N, D, noise_coeff)
+        function data = loadMockData(type, N, D, data_noise, graph_noise)
             data.X.words = mat2cell(1:N,1,ones(N,1))';
             Z = randn(N, D);         % generate random gaussian data
             if type == 0                             %% Create mock data    
                 data.X.G = zeros(N);                 % create empty graphs.
             elseif type == 1 
                 % mock data with graphs
-                data.X.G = rand(N,N)<0.01;
+                knnclassify(Z,Z,3);
+                
+                data.X.G = rand(N,N)<0.1;
             else
                 error('unknown type %d\n', type);
             end
             
-            data.X.features = Z + noise_coeff*randn(N,D);                % Y = X + noise
-            data.Y.features = Z + noise_coeff*randn(N,D);                % Y = X + noise
+            data.X.features = Z + data_noise*randn(N,D);                % Y = X + noise
+            data.Y.features = Z + data_noise*randn(N,D);                % Y = X + noise
             q = 0.92;
             true_pi         = Util.randswap(1:N, q*N);     % permute Y
             data.Y.features = data.Y.features(true_pi, :);
             data.Y.words    = data.X.words(true_pi);
             
             data.Y.G = data.X.G(true_pi, true_pi);
-            data.X.G = and(data.X.G, (rand(N,N)>0.1)); % remove a few randomly.
-            data.Y.G = and(data.Y.G, (rand(N,N)>0.1));
+            data.X.G = and(data.X.G, (rand(N,N)>graph_noise)); % remove a few randomly.
+            data.Y.G = and(data.Y.G, (rand(N,N)>graph_noise));
             data.X.G = Util.to_stochastic_graph(data.X.G);
             data.Y.G = Util.to_stochastic_graph(data.Y.G);
             
