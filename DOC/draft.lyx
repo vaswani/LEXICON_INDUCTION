@@ -229,8 +229,17 @@ s.t. & P\in\mathbb{P}_{n}\\
 
 \end_inset
 
-Where we additionally seek to find the correct permutation 
+Where the permutation 
 \begin_inset Formula $P$
+\end_inset
+
+ defines the matching between samples (i.e.
+ rows) in 
+\begin_inset Formula $X$
+\end_inset
+
+ and 
+\begin_inset Formula $Y$
 \end_inset
 
 .
