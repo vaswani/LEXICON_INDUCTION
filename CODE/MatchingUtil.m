@@ -23,14 +23,14 @@ classdef MatchingUtil
                 U = X * Y';
                 W = U;
                 % use graph information
-                for k=1:options.K,
+                for k=1:options.M,
                     W = W + options.lambda^k*(GX^k)*U*(GY^k)';
                 end
                 W = max(W(:)) - W;
              elseif strcmpi(options.weight_type, 'dist')
                  U = pdist2(X,Y,'euclidean');
                  W = U;
-                 for k=1:options.K,
+                 for k=1:options.M,
                      W = W + options.lambda^k*pdist2(GX^k*X,GY^k*Y);
                  end
              end
@@ -40,7 +40,7 @@ classdef MatchingUtil
 %                 % weights are proportional to the inner product of elements
 %                 U = X * Y';
 %                 W = U;
-%                 for k=1:options.K,
+%                 for k=1:options.M,
 %                     W = W + options.lambda^k*(GX^k)*U*(GY^k)';
 %                 end
 %                 W = max(W(:)) - W;
@@ -50,7 +50,7 @@ classdef MatchingUtil
 %             end
         end
         
-        function match = init_matching(listA, listB, max_dist)
+        function match = init_matching(listA, listB, max_dist, max_seed)
             % find a good initial matching, based on edit distance.
             NA = length(listA);
             NB = length(listB);
@@ -82,6 +82,7 @@ classdef MatchingUtil
             [sorted_ec, sigma] = sort(ec);
             best_match = best_match(sigma);
             top = find(sorted_ec>max_dist, 1)-1;
+            top = min(max_seed, top);
             % store the indices of the top matches in source and target
             match.all.source = sigma;
             match.all.target = best_match;
@@ -111,7 +112,7 @@ classdef MatchingUtil
             end
             [pi, cost] = MatchingUtil.lapjv(W, resolution);
             edge_cost = MatchingUtil.edge_cost(pi, W);
-            if ~isinf(cost) && ~(sum(edge_cost)-cost < 1e-8);
+            if ~isinf(cost) && ~(sum(edge_cost)-cost < 1e-6);
                 keyboard;
             end
         end

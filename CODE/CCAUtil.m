@@ -11,7 +11,7 @@ classdef CCAUtil
         %
         % where d_i is the dimension of samples in X_i
         
-        function [latent,p]=latentCCA(X,Y,options)
+        function model=latentCCA(X,Y,options)
             max_d = min(size(X,2), size(Y,2));
             if options.d > max_d,
                 fprintf('Warning: options.d > max_d (%d > %d) - truncating to %d.\n', options.d, max_d, max_d);
@@ -24,12 +24,17 @@ classdef CCAUtil
           
             %% Compute the latent representation of X, Y, in dimension d.
             range = 1:min(options.d,length(p));
-            M = diag(sqrt(p(range)));
-            U_X = U_X(:,range);
-            U_Y = U_Y(:,range);
-            
-            latent.X = CCAUtil.getLatent(X, U_X, M);
-            latent.Y = CCAUtil.getLatent(Y, U_Y, M);
+            model.M = diag(sqrt(p(range)));
+            model.U_X = U_X(:,range);
+            model.U_Y = U_Y(:,range);
+            model.p = p;
+        end
+
+        function Z=getLatent(model, X, Y)
+            Z.X = CCAUtil.getSingleLatent(X, model.U_X, model.M);
+            Z.Y = CCAUtil.getSingleLatent(Y, model.U_Y, model.M);
+            %latent.X = CCAUtil.getLatent(X, U_X, M); -- old implementation
+            %latent.Y = CCAUtil.getLatent(Y, U_Y, M); -- old implementation
             % Note that canoncorr() can return similar U,V as 4&5th outputs.
             % then, the following was verified to be negligible:
             % norm(inv(M')*latent.Y' - V'), norm(inv(M')*latent.X' - U')
@@ -37,7 +42,7 @@ classdef CCAUtil
             % options.d < max_d
         end
         
-        function Z=getLatent(X,U,M)
+        function Z=getSingleLatent(X,U,M)
             mu = mean(X);
             Z = M'*U'*X';
             Z = bsxfun(@minus, Z, M'*(U'*mu'))';

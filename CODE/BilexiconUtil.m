@@ -24,6 +24,7 @@ classdef BilexiconUtil
                 end
                 % map source words to a list of target words and vice
                 % versa.
+    
                 lex.s2t = BilexiconUtil.listadd(lex.s2t, W1, {W2});
                 lex.t2s = BilexiconUtil.listadd(lex.t2s, W2, {W1});
             end
@@ -47,30 +48,50 @@ classdef BilexiconUtil
                 word = ['_',word,'_'];
             end
         end
+
+        function hash = new_addAll(list)
+            % yes, I know there's a function addAll
+            hash = java.util.HashSet;
+            N = size(list,1);
+            for n=1:N,
+                hash.add(list{n});
+            end
+        end
+
         
+        %function gtlex = ground_truth(lex, source_words, target_words, seed_source_words, seed_target_words)
         function gtlex = ground_truth(lex, source_words, target_words)
             % setup a hash for quick lookup
-            N.source = size(source_words,1);
-            N.target = size(target_words,1);
-            HS.source = java.util.HashSet;
-            HS.target = java.util.HashSet;
-            for n=1:N.source,
-                HS.source.add(source_words{n});
-            end
-            for n=1:N.target
-                HS.target.add(target_words{n});            
-            end
+            HS.source = BilexiconUtil.new_addAll(source_words);
+            HS.target = BilexiconUtil.new_addAll(target_words);
+%             HS.seed_source = BilexiconUtil.new_addAll(seed_source_words);
+%             HS.seed_target = BilexiconUtil.new_addAll(seed_target_words);
                             
-            % remove words from the lexicon if they don't appear in A.
+            % remove words from the bilexicon lex.* if they don't appear in.
             gtlex.s2t = BilexiconUtil.remove_missing_words(lex.s2t, HS.source, HS.target);
             gtlex.t2s = BilexiconUtil.remove_missing_words(lex.t2s, HS.target, HS.source);
+            % remove seed words from bilexicon
+%             gtlex.s2t = BilexiconUtil.remove_existing_words(gtlex.s2t, HS.seed_source);
+%             gtlex.t2s = BilexiconUtil.remove_existing_words(gtlex.s2t, HS.seed_target);         
+        end
+
+        function bilex = remove_existing_words(bilex, keys_to_remove)
+            % removes a set of words from the hash
+            keys_to_remove = keys_to_remove.toArray();
+            for i=1:keys_to_remove.size(),
+                key = keys_to_remove(i);
+                if bilex.containsKey(key)
+                    bilex.remove(key);
+                end
+            end
         end
         
         function new_bilex = remove_missing_words(bilex, sourceHS, targetHS)
-            % put in clean hash, only keys that are present in sourceHS
-            % moreover, remove target words not in targetHS.
+            % In a clean hash, put only keys that are present in sourceHS
+            % and, remove target words not in targetHS.
+            % so that only possible edges can be counted
             source_words = sourceHS.toArray();
-            new_bilex = java.util.Hashtable;
+            new_bilex    = java.util.Hashtable;
             for i=1:source_words.size(),
                 source_word = source_words(i);
                 if bilex.containsKey(source_word)
@@ -90,22 +111,22 @@ classdef BilexiconUtil
             end
         end
         
-        function F1 = scoreAlignment(lex, A, coeff)
-            N = size(A,1);
-            count = 0;
-            for n=1:N,
-                source_word = A{n,1};
-                target_word = A{n,2};
-                list2 = lex.s2t.get(source_word);
-                for i = 0:list2.size()-1,
-                    word = list2.get(i);
-                    if strcmpi(word, target_word)
-                        count = count + 1;
-                        break;
-                    end
-                end
-            end
-        end
+%         function F1 = scoreAlignment(lex, A, coeff)
+%             N = size(A,1);
+%             count = 0;
+%             for n=1:N,
+%                 source_word = A{n,1};
+%                 target_word = A{n,2};
+%                 list2 = lex.s2t.get(source_word);
+%                 for i = 0:list2.size()-1,
+%                     word = list2.get(i);
+%                     if strcmpi(word, target_word)
+%                         count = count + 1;
+%                         break;
+%                     end
+%                 end
+%             end
+%         end
         
         function score = F1(precision, recall, beta)
             if nargin < 3
@@ -128,50 +149,21 @@ classdef BilexiconUtil
             [weights,pi] = sort(weights);
             matching = matching(pi, :);
 
-            K = 11;
-            range = linspace(1,N,K);
-            for r = 1:length(range)-1,
-                I = 1:range(r+1);
-                sub_matching = matching(I,:);
-                
-                tp = 0; % will count the edges in gtlex that exist in the matching
-                Nr = 0; % number of proposed matches that can actually be matched.
-                for n=1:size(sub_matching,1),
-                    source_word = sub_matching{n,1};
-                    target_word = sub_matching{n,2};
-                    if gtlex.s2t.containsKey(source_word) % some match exists for this source word
-                        Nr = Nr + 1;
-                        % do we have a correct match?
-                        if BilexiconUtil.is_valid_s2t_match(gtlex, source_word, target_word)
-                            tp = tp + 1; % yes we do!
-                        else
-                            tp = tp;
-                        end
-                    end
-                end
-                scores.N0(r) = Nr;
-                scores.P0(r) = tp/Nr;    % Nr = (tp+fp) = "# of retrieved matchings"
-                scores.Re0(r)    = tp/M;     % M  = (tp+fn) = "# of relevant matchings"
-                scores.F0(r) = BilexiconUtil.F1(scores.P0(r), scores.Re0(r));
-                scores.R0(r)  = size(sub_matching,1);
-                scores.M0 = M;
-            end 
-            
-            C = zeros(N,3);
+            C = zeros(N,3); 
             for n=1:N,
                 source_word = matching{n,1};
                 target_word = matching{n,2};
-                C(n,1) = 1;
+                C(n,1) = 1; % count size of matching being considered
                 if gtlex.s2t.containsKey(source_word) % some match exists for this source word
-                    C(n,2) = 1;
-                    C(n,3) = BilexiconUtil.is_valid_s2t_match(gtlex, source_word, target_word);
+                    C(n,2) = 1; % counts number of existing word in source and lexicon
+                    C(n,3) = BilexiconUtil.is_valid_s2t_match(gtlex, source_word, target_word); % counts valid matches
                 end
             end
             C = cumsum(C);
             
             scores.M = M;
             scores.precision = C(:,3) ./ C(:,2);
-            scores.recall = C(:,3) ./ M;;
+            scores.recall = C(:,3) ./ M;
             scores.F1 = BilexiconUtil.F1(scores.precision,scores.recall);
             scores.N = C(:,2);
             scores.R = C(:,1);
@@ -191,19 +183,21 @@ classdef BilexiconUtil
             i50 = find(scores.recall>=0.50,1);
             i60 = find(scores.recall>=0.60,1);
             
-            I = unique([i05, i10, i20, i25, i33, i40, i50, i60])
+            I = unique([i05, i10, i20, i25, i33, i40, i50, i60]);
             
             N  = scores.R(I);
             P  = scores.precision(I);
             R  = scores.recall(I);
             F1 = scores.F1(I);
-            fprintf('Scores: [wtype="%s", K=%d, lambda=%2.2f]\n', options.weight_type, options.K, options.lambda);
+            fprintf('Ra'); fprintf('%8.2f',100*N/max(scores.R)); fprintf('\n');
+            fprintf('F1'); fprintf('%8.2f', 100*F1); fprintf('\n');
+            fprintf('Pr'); fprintf('%8.2f', 100*P);  fprintf('\n');
+            fprintf('Re'); fprintf('%8.2f', 100*R);  fprintf('\n');
             fprintf('=======\n');
-            fprintf('Ra'); fprintf('\t% 3.2f',100*N/max(scores.R)); fprintf('\n');
-            fprintf('F1'); fprintf('\t% 3.2f', 100*F1); fprintf('\n');
-            fprintf('Pr'); fprintf('\t% 3.2f', 100*P);  fprintf('\n');
-            fprintf('Re'); fprintf('\t% 3.2f', 100*R);  fprintf('\n');
-            fprintf('=======\n');
+            if ~strcmpi(title, 'Edit Distance')
+                fprintf('Params: [wtype="%s", lambda=%2.2f, M=%d, K=%2.2f]\n', options.weight_type, options.lambda, options.M, options.K);
+                fprintf('=======\n');
+            end
         end
         
         function b = is_valid_s2t_match(gtlex, source_word, target_word)

@@ -136,6 +136,31 @@ classdef Util
                 end
             end
         end
+        
+        function G = knngraph(Z,K)
+            N = size(Z,1);
+            G = zeros(N); % create empty graphs.
+            [idx, dist] = knnsearch(Z,Z,'k',K);
+            for i=1:N,
+                G(i,idx(i,:)) = 1;
+            end
+        end
+        
+        function G = epsgraph(Z,eps)
+            N = size(Z,1);
+            G = pdist(Z);
+            medG = median(G);
+            G = G / medG;
+            G = squareform(G);
+            G = (G < eps);
+        end
+
+        function v=ascol(v)
+            [N,M]=size(v);
+            if N == 1
+                v = v';
+            end
+        end
     end
 end
 

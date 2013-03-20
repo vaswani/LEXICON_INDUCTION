@@ -17,29 +17,17 @@ classdef GMCCA
             assert(N.rX==N.rY);
             assert(N.fX==N.fY);
             %%
-            featuresX = [data.X.rest.features; data.X.fixed.features]; % this should == data.X.features
+            featuresX = [data.X.rest.features; data.X.fixed.features];
             start = tic; % start time
             F.hamming = inf(options.T, 1);
-            F.weights = [inf(1,N.rX),-inf(1,N.fX)];
             seed_pi = [(N.X-N.fX+1):N.X]; % this part of the permutation stays fixes.
             pi_t = 1:N.rY;                % this part of the permutation changes.
             restID = 1:N.rY;
-            pm.start_length = length(seed_pi);
-            pm.length = pm.start_length % pm = partial matching, initial length and increment steps
-            pm.i = 1;
             for t=1:options.T,
                 options.t = t;
                 inv_pi = Util.inverse_perm(pi_t);
                 featuresY = [data.Y.rest.features(pi_t,:); data.Y.fixed.features];
-                % supposedly, here, featuresX is aligned with featuresY, 
-                % however, here we take the t/10 lowest scoring pairs for the
-                % sake of computing the new latent representation.
-                sorted_weights = sort(F.weights); 
-                
-                top_matches = find(F.weights <= sorted_weights(pm.length));
-                % compute latent representation model under partial matching
-                cca_model = CCAUtil.latentCCA(featuresX(top_matches,:), featuresY(top_matches,:), options);  
-                % using model, compute latent representation of entire matching
+                cca_model = CCAUtil.latentCCA(featuresX, featuresY, options);  % compute latent representation under matching
                 Z = CCAUtil.getLatent(cca_model, featuresX, featuresY);
                 
                 Z.Y    = Z.Y([inv_pi,seed_pi],:);                                                % permute back.
@@ -52,8 +40,8 @@ classdef GMCCA
                 % pi_t = Util.randswap(pi_t, 4);
                 Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 F.pi = [pi_t, seed_pi];
-                F.weights = [F.edge_cost{end}, -inf(1, N.fX)];
-                GMCCA.getMatching(data.X.words, data.Y.words, F);
+                F.weights = [F.edge_cost{end},-ones(1, length(seed_pi))];
+                GMCCA.getMatching(data.X.words, data.Y.words, F)
                 % log and output
                 %F.normXY(t) = norm(Z.X-Z.Y,'fro');
                 %F.normX(t)  = norm(Z.X, 'fro');
@@ -67,14 +55,10 @@ classdef GMCCA
                     fprintf('%d), cost=%2.3f  inner=%2.3f  hamming_change=%d\n',t, F.cost(t), F.inner(t), F.hamming(t));
                 end
                 
-                if F.hamming(t)==0 && pm.length == N.X % fixed point, and no more edges to add - stopping condition
+                if F.hamming(t)==0  % fixed point - stopping condition
                     fprintf('Fixed point after t=%d iterations\n', t);
                     break;
                     %options.d = options.d + 10; % this will probably throw2 a bug later.
-                else%if F.hamming(t) < N.X/20
-                    pm.length = min(floor(pm.start_length + N.X*pm.i*0.05), N.X);
-                    pm.i = pm.i + 1;
-                    fprintf('increased pm.length=%d\n',pm.length);
                 end
             end
 
@@ -83,15 +67,15 @@ classdef GMCCA
             F.weights = [F.edge_cost{end},-ones(1, length(seed_pi))];     % and add inf weights as well
         end
         
-        function run(exp_id, maxN, lambda, M, K, weight_type)
+        function run(exp_id, maxN, lambda, M, K)
             % exp_id - experiment id, used in output filenames.
             % maxN - the maximum number of samples to consider.
             
             %% OPTIONS            
             fprintf('------------- Starting -----------\n');
-            %weight_type = 'dist'; % 'inner or 'dist'
+            weight_type = 'inner'; % 'inner or 'dist'
             
-            T = 30;  % at most 30 iterations
+            T = 20;  % at most 20 iterations
             if nargin < 3
                 lambda = 0; % diffusion rate
                 M = 1;   % random walk steps
@@ -171,11 +155,11 @@ classdef GMCCA
             
             feature_sum = sum(X.features > 0);
             frequent    = feature_sum >  40; % find features that appear more than X times
-%              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
-%              sparse20    = feature_sum > 10 & feature_sum <= 20; % find features that appear more than X times
-%              sparse30    = feature_sum > 20 & feature_sum <= 30; % find features that appear more than X times
-%              sparse40    = feature_sum > 30 & feature_sum <= 40; % find features that appear more than X times
-%              X.features  = [X.features(:, frequent), ...
+%             sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
+%             sparse20    = feature_sum > 10 & feature_sum <= 20; % find features that appear more than X times
+%             sparse30    = feature_sum > 20 & feature_sum <= 30; % find features that appear more than X times
+%             sparse40    = feature_sum > 30 & feature_sum <= 40; % find features that appear more than X times
+%             X.features  = [X.features(:, frequent), ...
 %                             sum(X.features(:,sparse10),2)...
 %                             sum(X.features(:,sparse20),2)...
 %                             sum(X.features(:,sparse30),2)...
@@ -185,16 +169,16 @@ classdef GMCCA
             X.features  = [X.features(:, frequent), sum(X.features(:,sparse40),2)];
             
             
-            H = Util.knngraph(X.features, options.K+1);
-            H = H - eye(size(H,1));
+            %H = Util.knngraph(X.features, options.K+1);
+            %H = H - eye(size(H,1));
             %H = xor(H, source.G(pi, pi));
-%             H = Util.epsgraph(X.features, options.K);
-%             H = H - eye(size(H,1));
+            H = Util.epsgraph(X.features, options.K);
+            H = H - eye(size(H,1));
             fprintf('Using %d edges in graph\n', sum(H(:)));
             X.G     = Util.to_stochastic_graph(H);
             %% add log frequency and log length (but don't use them in the graph)
             X.features  = [logFr, log2(L), X.features];
-
+            %X.features  = [log2(L)];
             [N2,D2] = size(X.features);
             fprintf('Setup features from [%d,%d] to [%d,%d].\n', N1,D1, N2,D2);
         end
@@ -208,8 +192,6 @@ classdef GMCCA
             F.weights = Util.ascol(F.weights);
             weights = (mat2cell(F.weights, ones(N,1)));
             matching = [ indices,wordsX, wordsY(F.pi), weights];
-            [~, sigma] = sort(F.weights, 'descend');
-            matching = matching(sigma, :);
         end
         
         function X = fix_matched_words(X, seed_pi)
@@ -218,24 +200,20 @@ classdef GMCCA
             rest = setdiff(1:Nw, seed_pi);
             new_order = [rest, seed_pi];
             
+            X.words = X.words(new_order);
+            X.features = X.features(new_order,:);
+            X.G = X.G(new_order,new_order);
             %% store seed-matched words in 'fixed' and the rest in 'rest'.
             X.fixed.words    = X.words(seed_pi);
             x.rest.word      = X.words(rest);
             X.fixed.features = X.features(seed_pi,:);
             X.rest.features  = X.features(rest,:);
-
-            X.words = X.words(new_order);
-            X.features = X.features(new_order,:);
-            X.G = X.G(new_order,new_order);
-            
-            featuresX = [X.rest.features; X.fixed.features];
-            assert(norm(featuresX - X.features, 'fro')==0);
         end
         
         function hamdist = sanityCheck(seed, data_noise, graph_noise, lambda_coeff, M, K)
             if nargin == 0
                 seed = 3;
-                data_noise   = 0.7;
+                data_noise   = 0.1;
                 graph_noise  = 0;
                 lambda_coeff = 1;
                 K = 20;

@@ -1,0 +1,233 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Subsection*
+The CCA problem
+\end_layout
+
+\begin_layout Standard
+Given a list of 
+\begin_inset Formula $n$
+\end_inset
+
+ pairs of samples 
+\begin_inset Formula $\{(x_{i},y_{i})\}_{i=1}^{n}$
+\end_inset
+
+ (that is, a matching), let 
+\begin_inset Formula $X$
+\end_inset
+
+ denote 
+\begin_inset Formula $(x_{1},\ldots,x_{n})$
+\end_inset
+
+ and similarly let 
+\begin_inset Formula $Y$
+\end_inset
+
+ denote 
+\begin_inset Formula $(y_{1},\ldots,y_{m})$
+\end_inset
+
+.
+ The CCA problem for finding the top 
+\begin_inset Formula $p$
+\end_inset
+
+ correlation coefficients between 
+\begin_inset Formula $X$
+\end_inset
+
+ and 
+\begin_inset Formula $Y$
+\end_inset
+
+ can be formulated as the following optimization program [Hardoon]:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\max_{U,V} & Tr[U^{T}X^{T}YV]\\
+s.t. & U^{T}X^{T}XU=I_{p} & V^{T}Y^{T}YV=I_{p}\\
+ & u_{i}^{T}X^{T}Yv_{j}=0 & \forall i\ne j\in\{1\ldots p\}
+\end{eqnarray*}
+
+\end_inset
+
+Where 
+\begin_inset Formula $U\in\mathbb{R}^{d_{X}\times p}$
+\end_inset
+
+ and 
+\begin_inset Formula $V\in\mathbb{R}^{d_{Y}\times p}$
+\end_inset
+
+ serve to project 
+\begin_inset Formula $X$
+\end_inset
+
+ and 
+\begin_inset Formula $Y$
+\end_inset
+
+ to a common latent space.
+ Specifically, the objective function can be written as 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+Tr[U^{T}X^{T}YV]=Tr[YVU^{T}X^{T}]=\sum_{i=1}^{n}\langle Ux_{i},Vy_{i}\rangle
+\]
+
+\end_inset
+
+Thus, by viewing 
+\begin_inset Formula $Ux_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $Vy_{i}$
+\end_inset
+
+ as latent representation of 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+, we see CCA's objective is to maximize the overall similarity between all
+ the matched samples pairs 
+\begin_inset Formula $(x_{i},y_{i})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It is well known the problem can be solved by applying singular value decomposit
+ion to the matrix 
+\begin_inset Formula $(X^{T}X)^{-\frac{1}{2}}X^{T}Y(Y^{T}Y)^{-\frac{1}{2}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection*
+The Matching CCA problem
+\end_layout
+
+\begin_layout Standard
+The matching CCA problem assume no knowledge of the correct correspondence
+ between samples in 
+\begin_inset Formula $X$
+\end_inset
+
+ and 
+\begin_inset Formula $Y$
+\end_inset
+
+.
+ Instead the goal is to recover the correct matching, as well as find the
+ top 
+\begin_inset Formula $p$
+\end_inset
+
+ correlation coefficients.
+ Denoting the set of all permutation matrices on 
+\begin_inset Formula $n$
+\end_inset
+
+ elements as 
+\begin_inset Formula $\mathbb{P}_{n}$
+\end_inset
+
+, we can succinctly write the optimization problem as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\max_{U,V,P} & Tr[U^{T}X^{T}PYV]\\
+s.t. & P\in\mathbb{P}_{n}\\
+ & \text{+ previous constraints on \ensuremath{U,V}}
+\end{eqnarray*}
+
+\end_inset
+
+Where 
+\end_layout
+
+\end_body
+\end_document
