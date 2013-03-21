@@ -29,3 +29,7 @@ usage for getFeaturesFromEmbeddings.py:
 python getFeaturesFromEmbeddings.py ../DATA/en-es/europarl-v7.es-en.en.tok.100k.tags.nouns.top10k ../EMBEDDINGS/en-es/embeddings.europarl-v7.es-en.es
 
 this script creates the input features using word embeddings instead of the standard sparse features
+
+usage for getContextFeatures.py
+
+python getContextFeatures.py ../DATA/en-es/europarl-v7.es-en.en.tok.100k.tags ../DATA/en-es/en.top.2k en
