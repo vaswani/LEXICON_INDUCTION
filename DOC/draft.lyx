@@ -154,33 +154,31 @@ Tr[U^{T}X^{T}YV]=Tr[YVU^{T}X^{T}]=\sum_{i=1}^{n}\langle Ux_{i},Vy_{i}\rangle
 
 \end_inset
 
-Thus, by viewing 
-\begin_inset Formula $Ux_{i}$
-\end_inset
-
- and 
-\begin_inset Formula $Vy_{i}$
-\end_inset
-
- as latent representation of 
-\begin_inset Formula $x_{i}$
-\end_inset
-
- and 
-\begin_inset Formula $y_{i}$
-\end_inset
-
-, we see CCA's objective is to maximize the overall similarity between all
- the matched samples pairs 
+Thus we see that CCA's objective is to maximize the overall similarity between
+ all the matched samples pairs 
 \begin_inset Formula $(x_{i},y_{i})$
 \end_inset
 
-.
+ in the latent space.
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ 
 \end_layout
 
 \begin_layout Standard
-It is well known the problem can be solved by applying singular value decomposit
-ion to the matrix 
+Although not an instance of convex optimization programming, it is well
+ known the problem can be solved by singular value decomposition of the
+ matrix 
 \begin_inset Formula $(X^{T}X)^{-\frac{1}{2}}X^{T}Y(Y^{T}Y)^{-\frac{1}{2}}$
 \end_inset
 
@@ -192,23 +190,27 @@ The Matching CCA problem
 \end_layout
 
 \begin_layout Standard
-The matching CCA problem assume no knowledge of the correct correspondence
- between samples in 
+The matching CCA problem [Haghighi] assumes no knowledge of the correct
+ matching between the samples in 
 \begin_inset Formula $X$
 \end_inset
 
- and 
+ to those in 
 \begin_inset Formula $Y$
 \end_inset
 
 .
- Instead the goal is to recover the correct matching, as well as find the
- top 
+ Instead, the goal is to recover both the correct matching, as well as find
+ the top 
 \begin_inset Formula $p$
 \end_inset
 
  correlation coefficients.
- Denoting the set of all permutation matrices on 
+ 
+\end_layout
+
+\begin_layout Standard
+Denoting the set of all permutation matrices on 
 \begin_inset Formula $n$
 \end_inset
 
@@ -216,7 +218,7 @@ The matching CCA problem assume no knowledge of the correct correspondence
 \begin_inset Formula $\mathbb{P}_{n}$
 \end_inset
 
-, we can succinctly write the optimization problem as
+, we can succinctly write the optimization problem as:
 \end_layout
 
 \begin_layout Standard
@@ -224,7 +226,8 @@ The matching CCA problem assume no knowledge of the correct correspondence
 \begin{eqnarray*}
 \max_{U,V,P} & Tr[U^{T}X^{T}PYV]\\
 s.t. & P\in\mathbb{P}_{n}\\
- & \text{+ previous constraints on \ensuremath{U,V}}
+ & U^{T}X^{T}XU=I_{p} & V^{T}Y^{T}YV=I_{p}\\
+ & u_{i}^{T}X^{T}PYv_{j}=0 & \forall i\ne j\in\{1\ldots p\}
 \end{eqnarray*}
 
 \end_inset
@@ -233,8 +236,7 @@ Where the permutation
 \begin_inset Formula $P$
 \end_inset
 
- defines the matching between samples (i.e.
- rows) in 
+ defines the matching between samples (i.e., rows) in 
 \begin_inset Formula $X$
 \end_inset
 

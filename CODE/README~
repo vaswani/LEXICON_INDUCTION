@@ -12,35 +12,16 @@ GMCCA.run() -- a function that loads the data, executes the algorithm and output
 -----------
 The parameters governing the execution are set in the makeOptions() function.
 These are:
-* T 
-the maximum number of "EM" iterations
-
-* weight_type 
-type of similarity matrix the matching algorithm gets.
-
-* d
-ignore this. used to govern the dimensionality of the input.
-
-* K
-parameter that defines the unsupervised graphs
-for knn-graphs, K is the number of neighbors, 
-for eps neighborhood graphs, it is the eps distance.
-
-* lambda
-The weight assigned to graph features.
-
-* M
-degree with which to use graph when building the similarity matrix.
-i.e, K+(lambda*G)K+(lambda*G)^2K .. *(lambda*G)^MK,
-Where K is the basic similarity matrix.
-Note: try M=1, lambda>1 first.
-
-* max_seed
-maximum length of seed matching, if computed.
-
-* delta_pm
-rate of increment of partial matching along the T iterations.
-T should be > 100/delta_pm for all the complete matching to be regarded.
+* T - the maximum number of "EM" iterations
+* weight_type - type of similarity matrix the matching algorithm gets.
+options.d = d;                         % ignore this. used to govern the dimensionality of the input.
+options.K = K;                         % parameter for graph (for knn-graphs, K is the number of neighbors, eps neighborhood graphs - eps.)
+options.lambda = lambda;               % weight assigned to graph features and
+options.M = M;                         % degree to use graph.
+% for example, K+(lambda*G)K+(lambda*G)^2K .. *(lambda*G)^MK,
+% try M=1, lambda>1 first.
+options.max_seed = max_seed;           % maximum length of seed.
+options.delta_pm = delta_pm;           % increment percent of partial matching 
 
 
 Sanity Check

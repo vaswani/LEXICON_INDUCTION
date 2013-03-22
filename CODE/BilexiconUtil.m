@@ -1,7 +1,7 @@
 classdef BilexiconUtil
    
     methods(Static)
-        
+        %% FUNCTIONS TO LOAD THE BILEXICON
         function lex = new()
             lex.s2t = java.util.Hashtable; % source to target
             lex.t2s = java.util.Hashtable; % target to source
@@ -30,6 +30,8 @@ classdef BilexiconUtil
             end
         end
         
+        %% GENERAL HASH OF LIST FUNCTIONS
+        
         function h = listadd(h, key, values)
             key = BilexiconUtil.fixWord(key);
             list = h.get(key);
@@ -57,22 +59,24 @@ classdef BilexiconUtil
                 hash.add(list{n});
             end
         end
-
+        
+        %% SET UP THE BILEXICON
         
         %function gtlex = ground_truth(lex, source_words, target_words, seed_source_words, seed_target_words)
         function gtlex = ground_truth(lex, source_words, target_words)
+            % This function prepares the ground truth bilexicon - gtlex
+            % scoring will be done against gtlex.
+            % gtlex is a sub-set of lex, restricted to the given
+            % source and target words.
+            
             % setup a hash for quick lookup
             HS.source = BilexiconUtil.new_addAll(source_words);
             HS.target = BilexiconUtil.new_addAll(target_words);
-%             HS.seed_source = BilexiconUtil.new_addAll(seed_source_words);
-%             HS.seed_target = BilexiconUtil.new_addAll(seed_target_words);
-                            
-            % remove words from the bilexicon lex.* if they don't appear in.
+    
+            % remove words from the bilexicon lex.s2t/t2s if they don't
+            % appear in the source/target.
             gtlex.s2t = BilexiconUtil.remove_missing_words(lex.s2t, HS.source, HS.target);
             gtlex.t2s = BilexiconUtil.remove_missing_words(lex.t2s, HS.target, HS.source);
-            % remove seed words from bilexicon
-%             gtlex.s2t = BilexiconUtil.remove_existing_words(gtlex.s2t, HS.seed_source);
-%             gtlex.t2s = BilexiconUtil.remove_existing_words(gtlex.s2t, HS.seed_target);         
         end
 
         function bilex = remove_existing_words(bilex, keys_to_remove)
@@ -111,22 +115,7 @@ classdef BilexiconUtil
             end
         end
         
-%         function F1 = scoreAlignment(lex, A, coeff)
-%             N = size(A,1);
-%             count = 0;
-%             for n=1:N,
-%                 source_word = A{n,1};
-%                 target_word = A{n,2};
-%                 list2 = lex.s2t.get(source_word);
-%                 for i = 0:list2.size()-1,
-%                     word = list2.get(i);
-%                     if strcmpi(word, target_word)
-%                         count = count + 1;
-%                         break;
-%                     end
-%                 end
-%             end
-%         end
+        %% scoring
         
         function score = F1(precision, recall, beta)
             if nargin < 3
@@ -169,6 +158,23 @@ classdef BilexiconUtil
             scores.R = C(:,1);
         end
         
+        function b = is_valid_s2t_match(gtlex, source_word, target_word)
+            b = 0;
+            target_list = gtlex.s2t.get(source_word);
+            if ~isempty(target_list)
+                target_words = target_list.toArray();
+                for i=1:target_list.size()
+                    word = target_words(i);
+                    if strcmpi(word, target_word)
+                        b = 1;
+                        break;
+                    end   
+                end
+            end
+        end
+        
+        %% OUTPUT
+        
         function outputScores(scores, options, title)
             fprintf('Results for %s:\n', title);
             fprintf('===============\n');
@@ -200,35 +206,11 @@ classdef BilexiconUtil
             end
         end
         
-        function b = is_valid_s2t_match(gtlex, source_word, target_word)
-            b = 0;
-            target_list = gtlex.s2t.get(source_word);
-            if ~isempty(target_list)
-                target_words = target_list.toArray();
-                for i=1:target_list.size()
-                    word = target_words(i);
-                    if strcmpi(word, target_word)
-                        b = 1;
-                        break;
-                    end   
-                end
-            end
-        end
-        
-%         function score = F1v2(tp, fn, fp, beta)
-%             num = (1+beta^2)*tp;
-%             denom = num + beta^2*fn + fp;
-%             score = num / denom;
-%         end
-            
+        %%%%%%%%%%%%%%%%% TEST FUNCTIONS
+           
         
         function gtlex = test()
-            %% create a bilexicon
-            % A1 -- B1
-            % A2 -- B2_0, B2_1, C
-            % A3 -- B3_0,D
-            % A4 -- B2_0
-            
+            % test function for this class.
             B = {
                 '_big_', '_grande_';
                 '_the_', '_el_';
@@ -239,7 +221,9 @@ classdef BilexiconUtil
                 '_city_', '_ciudad_';
                 '_country_', '_pais_';
                 '_beautiful_', '_hermosa_';
-                }
+                };
+            
+            % build the lexicon from B.
             bilex = BilexiconUtil.parseLexicon(B);
             
             matching = {
@@ -249,11 +233,12 @@ classdef BilexiconUtil
                 '_country_', '_hermosa_';
                 '_beautiful_', '_pais_';
                 '_unmatched_', '_unmatched_'
-                }
+                };
             
-            weights = 1:size(matching,1);
+            weights = 1:size(matching,1); % just some simple weights
             
-            gtlex = BilexiconUtil.ground_truth(bilex, matching(:,1), matching(:,2));
+            % filter with ground truth.
+            gtlex  = BilexiconUtil.ground_truth(bilex, matching(:,1), matching(:,2));
             scores = BilexiconUtil.getF1scores(gtlex, matching, weights);
             plot(scores.F1);
             
