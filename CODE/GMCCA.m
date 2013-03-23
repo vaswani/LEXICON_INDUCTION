@@ -198,7 +198,7 @@ classdef GMCCA
             X.G     = Util.to_stochastic_graph(H);
             %% add log frequency and log length (but don't use them in the graph)
             X.features  = [logFr, log2(L), X.features];
-            
+            X.features = [X.features, X.G*X.features];
             [N2,D2] = size(X.features);
             fprintf('Setup features from [%d,%d] to [%d,%d].\n', N1,D1, N2,D2);
         end
