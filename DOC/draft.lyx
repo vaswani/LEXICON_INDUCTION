@@ -62,6 +62,60 @@
 
 \begin_body
 
+\begin_layout Title
+Improved Bilingual Lexicon Learning using Monolingual Graphs
+\end_layout
+
+\begin_layout Abstract
+In language translation, it is likely the case that word synonyms (antonyms)
+ within one language are translated to synonyms (antonyms) within the other.
+ Using this insight, we construct monolingual graphs, such as synonym graphs,
+ and extend [Haghighi]'s 
+\emph on
+mCCA
+\emph default
+ algorithm to use them.
+ 
+\end_layout
+
+\begin_layout Abstract
+We investigate the influence of monolingual graphs and show our new method
+ is superior in terms of robustness to noise (on synthetic data) as well
+ as the precision-recall quality of the output bilexicon (on real data).
+\end_layout
+
+\begin_layout Section*
+Introduction
+\end_layout
+
+\begin_layout Standard
+very brief overview of the problem?
+\end_layout
+
+\begin_layout Subsection*
+Related work
+\end_layout
+
+\begin_layout Standard
+we extend [Haghighi]'s elegant approach for lexicon learning by using monolingua
+l graphs, thereby exploiting similarities in both the latent space and the
+ original features space.
+ We construct supervised and unsupervised monolingual graphs.
+\end_layout
+
+\begin_layout Standard
+Using a generative story for bilingual word pairs, [Haghighi] shows how
+ translations can be obtained by matching according word similarities in
+ a learned common latent space.
+ [Hal's student] uses the original feature space to obtain a kernel per
+ each monolingual set of words , and then solves the matching problem via
+ kernel sorting.
+\end_layout
+
+\begin_layout Standard
+Kernels and Graphs / diffusion kernels?
+\end_layout
+
 \begin_layout Subsection*
 The CCA problem
 \end_layout
@@ -76,7 +130,7 @@ Given a list of
 \end_inset
 
  (that is, a matching), let 
-\begin_inset Formula $X$
+\begin_inset Formula $X\in\mathbb{R}^{n\times d_{X}}$
 \end_inset
 
  denote 
@@ -84,7 +138,7 @@ Given a list of
 \end_inset
 
  and similarly let 
-\begin_inset Formula $Y$
+\begin_inset Formula $Y\in\mathbb{R}^{n\times d_{Y}}$
 \end_inset
 
  denote 
@@ -133,8 +187,11 @@ Where
 \begin_inset Formula $Y$
 \end_inset
 
- to a common latent space.
- Specifically, the objective function can be written as 
+ (resp.) to a common latent space.
+\end_layout
+
+\begin_layout Standard
+Note that the objective function can be expressred 
 \family roman
 \series medium
 \shape up
@@ -147,42 +204,27 @@ Where
 \noun off
 \color none
 
-\begin_inset Formula 
-\[
-Tr[U^{T}X^{T}YV]=Tr[YVU^{T}X^{T}]=\sum_{i=1}^{n}\langle Ux_{i},Vy_{i}\rangle
-\]
-
-\end_inset
-
-Thus we see that CCA's objective is to maximize the overall similarity between
- all the matched samples pairs 
-\begin_inset Formula $(x_{i},y_{i})$
-\end_inset
-
- in the latent space.
-
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\strikeout default
-\uuline default
-\uwave default
-\noun default
-\color inherit
- 
-\end_layout
-
-\begin_layout Standard
-Although not an instance of convex optimization programming, it is well
- known the problem can be solved by singular value decomposition of the
- matrix 
-\begin_inset Formula $(X^{T}X)^{-\frac{1}{2}}X^{T}Y(Y^{T}Y)^{-\frac{1}{2}}$
+\begin_inset Formula $Tr[U^{T}X^{T}YV]=Tr[YVU^{T}X^{T}]=\sum_{i=1}^{n}\langle Ux_{i},Vy_{i}\rangle$
 \end_inset
 
 .
+ Thus we see that CCA's objective is to find projection matrices that maximize
+ the overall similarity between projections of the given matched sample
+ pairs 
+\begin_inset Formula $(x_{i},y_{i})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Although not a convex optimization programming instance, it is well known
+ the problem can be solved by singular value decomposition of the matrix
+ 
+\begin_inset Formula $(X^{T}X)^{-\frac{1}{2}}X^{T}Y(Y^{T}Y)^{-\frac{1}{2}}$
+\end_inset
+
+ [Hardoon, Section 6].
 \end_layout
 
 \begin_layout Subsection*
@@ -201,12 +243,7 @@ The matching CCA problem [Haghighi] assumes no knowledge of the correct
 
 .
  Instead, the goal is to recover both the correct matching, as well as find
- the top 
-\begin_inset Formula $p$
-\end_inset
-
- correlation coefficients.
- 
+ a latent space in which the projected matched words are similar.
 \end_layout
 
 \begin_layout Standard
@@ -215,7 +252,7 @@ Denoting the set of all permutation matrices on
 \end_inset
 
  elements as 
-\begin_inset Formula $\mathbb{P}_{n}$
+\begin_inset Formula $\mathbb{P}_{n}=\{P\in\{0,1\}^{n\times n}|P1=1,\: P^{T}1=1\}$
 \end_inset
 
 , we can succinctly write the optimization problem as:
@@ -245,6 +282,135 @@ Where the permutation
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+Haghighi suggest an EM-style optimization approach for solving the problem:
+ In the M-step the matrices 
+\begin_inset Formula $U,V$
+\end_inset
+
+ are re-estimated, by considering a fixed
+\emph on
+ partial 
+\emph default
+matching derived from 
+\begin_inset Formula $P$
+\end_inset
+
+ -- A partial matching is required since the matching proposed by the first
+ few iterations are expected to be far from the optimal one, and as such
+ useless for CCA -- only sample pairs with already high similarity are used
+ when estimating the next projection matrices.
+\end_layout
+
+\begin_layout Standard
+In the E-steps, the projection matrices 
+\begin_inset Formula $U,V$
+\end_inset
+
+ are held fixed and the problem reduces to the maximum matching problem
+ in 
+\begin_inset Formula $P$
+\end_inset
+
+, which is known to be polynomial-time solvable (for example, by using the
+ so-called Hungarian algorithm [ref]).
+ 
+\end_layout
+
+\begin_layout Standard
+(technical note:) The non-convexity of the program calls for a good starting
+ point.
+ [Haghighi] initialize by using a seed matching of small size, obtained
+ from the ground truth bilexicon.
+ Stability in the latent representation is obtained by keep the seed fixed
+ along the optimization procedure.
+\end_layout
+
+\begin_layout Subsection*
+Intuition Behind Monolingual Graphs
+\end_layout
+
+\begin_layout Standard
+explain intuition behind monolingual graphs - constructing graphs under
+ which we expect neighbors of matches words to be similar.
+ The graphs contain no self loops and so, we don't encode over all similarity,
+ but instead similarity between neighbors.
+ Technically may want just a few neighbors to be similar, but, we resort
+ to solving over all pairs (expectation).
+ There should be a nice figure/graph explaining this -- i.e., we should find
+ a pair of synonyms in english and their corresponding in spanish, where
+ the correspondance is clear.
+\end_layout
+
+\begin_layout Standard
+Fixing 
+\begin_inset Formula $U,V$
+\end_inset
+
+ let 
+\begin_inset Formula $\tilde{X}=XU$
+\end_inset
+
+ and 
+\begin_inset Formula $\tilde{Y}=YV$
+\end_inset
+
+ and let 
+\begin_inset Formula $G_{X},G_{Y}$
+\end_inset
+
+ denote monolingual graphs on the samples of 
+\begin_inset Formula $X$
+\end_inset
+
+ and 
+\begin_inset Formula $Y$
+\end_inset
+
+ (resp.).
+\end_layout
+
+\begin_layout Standard
+The E-step under our formulation can be written as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\max_{P} & Tr[P\tilde{Y}\tilde{X}^{T}]+\lambda Tr[PG_{Y}\tilde{Y}\tilde{X}^{T}G_{X}^{T}]\\
+s.t. & P\in\mathbb{P}_{n}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-21"
+
+\end_inset
+
+David R.
+ Hardoon , Sandor Szedmak and John Shawe-Taylor.
+ Canonical correlation analysis; An overview with application to learning
+ methods http://eprints.soton.ac.uk/259225/1/tech_report03.pdf
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-24"
+
+\end_inset
+
+Aria Haghighi, Percy Liang, Taylor Berg-Kirkpatrick and Dan Klein, Learning
+ Bilingual Lexicons from Monolingual Corpora, http://www.aclweb.org/anthology/P/P0
+8/P08-1088.pdf
 \end_layout
 
 \end_body
