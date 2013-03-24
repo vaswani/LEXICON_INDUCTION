@@ -67,33 +67,22 @@ Improved Bilingual Lexicon Learning using Monolingual Graphs
 \end_layout
 
 \begin_layout Abstract
-In language translation, it is likely the case that word synonyms (antonyms)
+In the context of language translation, it is likely that synonyms (or antonyms)
  within one language are translated to synonyms (antonyms) within the other.
  Using this insight, we construct monolingual graphs, such as synonym graphs,
- and extend [Haghighi]'s 
+ and extend the formulation of [Haghighi]'s 
 \emph on
-mCCA
+Matching CCA
 \emph default
  algorithm to use them.
- 
-\end_layout
-
-\begin_layout Abstract
-We investigate the influence of monolingual graphs and show our new method
- is superior in terms of robustness to noise (on synthetic data) as well
- as the precision-recall quality of the output bilexicon (on real data).
+ We investigate the influence of monolingual graphs and show our new method
+ yields superior results in terms of robustness to noise (on synthetic data)
+ as well as the precision-recall quality of the output bilexicon (on real
+ data).
 \end_layout
 
 \begin_layout Section*
 Introduction
-\end_layout
-
-\begin_layout Standard
-very brief overview of the problem?
-\end_layout
-
-\begin_layout Subsection*
-Related work
 \end_layout
 
 \begin_layout Standard
@@ -107,13 +96,43 @@ l graphs, thereby exploiting similarities in both the latent space and the
 Using a generative story for bilingual word pairs, [Haghighi] shows how
  translations can be obtained by matching according word similarities in
  a learned common latent space.
- [Hal's student] uses the original feature space to obtain a kernel per
- each monolingual set of words , and then solves the matching problem via
- kernel sorting.
+ 
+\end_layout
+
+\begin_layout Subsection*
+Related work
 \end_layout
 
 \begin_layout Standard
-Kernels and Graphs / diffusion kernels?
+[Hal's student] approach avoids learning a common latent space for the two
+ word domains.
+ They compute a non-linear feature mapping of the words, and subsequently
+ obtain a kernel representing the word similarity within each lanauge.
+ The matching is then found by kernel sorting [ref].
+\end_layout
+
+\begin_layout Standard
+Our work can be seen as combining the best of both words by exploiting both
+ similarities in the original space, and the latent space -- Indeed, like
+ [Haghighi] we compute similarities in the latent space, however, the usage
+ of monolingual graphs encourages learning a matching that also respects
+ similarities in the original space.
+ That is, under our formulation, two words are similar if their latent represent
+ation is similar, and the latent representations of their neighbors are
+ also similar (see figure ? for an illustration)
+\end_layout
+
+\begin_layout Standard
+The usage of Kernels and Graphs / diffusion kernels?
+\end_layout
+
+\begin_layout Section*
+Optimization
+\end_layout
+
+\begin_layout Standard
+(note: the following two subsections can be united to a single, perhaps
+ heavier one)
 \end_layout
 
 \begin_layout Subsection*
@@ -335,7 +354,7 @@ Intuition Behind Monolingual Graphs
 \begin_layout Standard
 explain intuition behind monolingual graphs - constructing graphs under
  which we expect neighbors of matches words to be similar.
- The graphs contain no self loops and so, we don't encode over all similarity,
+ The graphs contain no self-loops and so, we don't encode over all pairwise,
  but instead similarity between neighbors.
  Technically may want just a few neighbors to be similar, but, we resort
  to solving over all pairs (expectation).
@@ -386,6 +405,59 @@ s.t. & P\in\mathbb{P}_{n}
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section*
+Experimental Results
+\end_layout
+
+\begin_layout Subsection*
+Synthetic Data 
+\end_layout
+
+\begin_layout Standard
+Discuss how the data was generated, and refer to plot that shows our superior
+ probability of accurate recovery under increasing noise in both the data
+ and graph.
+\end_layout
+
+\begin_layout Subsection*
+Real Data
+\end_layout
+
+\begin_layout Standard
+Show results of real experiments with unsupervised graphs, compare resulst
+ when using 
+\end_layout
+
+\begin_layout Itemize
+KNN graphs, 
+\end_layout
+
+\begin_layout Itemize
+distance weighted KNN graphs
+\end_layout
+
+\begin_layout Itemize
+eps-graphs
+\end_layout
+
+\begin_layout Section*
+Discussion
+\end_layout
+
+\begin_layout Standard
+What we did.
+ Our success.
+ Vision.
+\end_layout
+
+\begin_layout Itemize
+forging good graphs.
+\end_layout
+
+\begin_layout Itemize
+finding a better generative story
 \end_layout
 
 \begin_layout Bibliography
