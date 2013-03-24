@@ -85,8 +85,25 @@ Matching CCA
 Introduction
 \end_layout
 
+\begin_layout Itemize
+translation as a matching problem and [Haghighi]'s mCCA approach
+\end_layout
+
+\begin_layout Itemize
+our insight for using monolingual graphs + figure 1 as an illustration -
+ There should be a nice figure/graph explaining this -- i.e., we should find
+ a pair of synonyms in english and their corresponding in spanish, where
+ the correspondance is clear, I think English's (big-enormous) and Spanish
+ (grande-enorme) is a nice example where one is similar based on context
+ and the other, based on both context and orthography.
+\end_layout
+
 \begin_layout Standard
-we extend [Haghighi]'s elegant approach for lexicon learning by using monolingua
+some rough text:
+\end_layout
+
+\begin_layout Standard
+We extend [Haghighi]'s elegant approach for lexicon learning by using monolingua
 l graphs, thereby exploiting similarities in both the latent space and the
  original features space.
  We construct supervised and unsupervised monolingual graphs.
@@ -99,10 +116,6 @@ Using a generative story for bilingual word pairs, [Haghighi] shows how
  
 \end_layout
 
-\begin_layout Subsection*
-Related work
-\end_layout
-
 \begin_layout Standard
 [Hal's student] approach avoids learning a common latent space for the two
  word domains.
@@ -112,31 +125,33 @@ Related work
 \end_layout
 
 \begin_layout Standard
-Our work can be seen as combining the best of both words, exploiting both
- similarities in the original space, and the latent space -- like [Haghighi],
- we compute similarities in the latent space, however, the usage of monolingual
- graphs encourages learning a matching that respects similarities in the
- original space.
+Our work can be seen as combining the best of both words by exploiting both
+ similarities in the original space, and the latent space -- Indeed, like
+ [Haghighi] we compute similarities in the latent space, however, the usage
+ of monolingual graphs encourages learning a matching that also respects
+ similarities in the original space.
  That is, under our formulation, two words are similar if their latent represent
 ation is similar, and the latent representations of their neighbors are
- also similar (see figure ? for an illustration)
+ also similar (see figure 1 for an illustration)
 \end_layout
 
 \begin_layout Standard
-Kernels and Graphs / diffusion kernels?
+The usage of Kernels and Graphs / diffusion kernels?
 \end_layout
 
 \begin_layout Section*
-Optimization
+Solving the Matching Problem
 \end_layout
 
 \begin_layout Standard
-(note: the following two subsections can probably be united to a single
- one)
+(note: the following two subsections should probably be joined to a single
+ that just presents mCCA and says that if P is fixed to the identity along
+ the optimization, it just reduces to the ordinary CCA problem.
+ This may save some space.)
 \end_layout
 
 \begin_layout Subsection*
-The CCA problem
+CCA 
 \end_layout
 
 \begin_layout Standard
@@ -348,19 +363,18 @@ In the E-steps, the projection matrices
 \end_layout
 
 \begin_layout Subsection*
-Intuition Behind Monolingual Graphs
+Adding Monolingual Graphs to the optimization
 \end_layout
 
 \begin_layout Standard
 explain intuition behind monolingual graphs - constructing graphs under
- which we expect neighbors of matches words to be similar.
- The graphs contain no self-loops and so, we don't encode over all pairwise,
- but instead similarity between neighbors.
+ which we expect neighbors of matches words to be similar in the latent
+ space.
+ The graphs contain no self-loops and so we only encourage similarity between
+ neighbors.
  Technically may want just a few neighbors to be similar, but, we resort
- to solving over all pairs (expectation).
- There should be a nice figure/graph explaining this -- i.e., we should find
- a pair of synonyms in english and their corresponding in spanish, where
- the correspondance is clear.
+ to solving over all pairs (expectation - explain what is GX).
+ 
 \end_layout
 
 \begin_layout Standard
@@ -426,11 +440,38 @@ Real Data
 \end_layout
 
 \begin_layout Standard
-Show results of real experiments
+Show results of real experiments with unsupervised graphs, compare resulst
+ when using 
+\end_layout
+
+\begin_layout Itemize
+KNN graphs, 
+\end_layout
+
+\begin_layout Itemize
+distance weighted KNN graphs
+\end_layout
+
+\begin_layout Itemize
+eps-graphs
 \end_layout
 
 \begin_layout Section*
 Discussion
+\end_layout
+
+\begin_layout Standard
+What we did.
+ Our success.
+ Vision.
+\end_layout
+
+\begin_layout Itemize
+forging good graphs.
+\end_layout
+
+\begin_layout Itemize
+finding a better generative story
 \end_layout
 
 \begin_layout Bibliography
