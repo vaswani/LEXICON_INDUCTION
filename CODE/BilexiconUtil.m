@@ -150,6 +150,10 @@ classdef BilexiconUtil
             end
             C = cumsum(C);
             
+            % C1 - always 1, i.e. cumsum counts the number of words.
+            % C2 - 1 of source
+            % C1 - counts the size of the matching being considered
+            
             scores.M = M;
             scores.precision = C(:,3) ./ C(:,2);
             scores.recall = C(:,3) ./ M;
