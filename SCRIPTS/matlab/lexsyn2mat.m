@@ -29,6 +29,7 @@ function G = make_synonym_adj(filename, X)
         matches = split(line, ',');
         word1      = matches{1};
         word2      = matches{2};
+        weight     = matches{3};
         id1 = X.word2id.get(word1);
         id2 = X.word2id.get(word2);
         if isempty(id1) || isempty(id2)
@@ -43,7 +44,7 @@ function G = make_synonym_adj(filename, X)
             if G(id1,id2)
                 fprintf('words already exist "%s"=%d "%s"=%d.\n', word1, id1, word2, id2);
             end
-            G(id1,id2) = 1;
+            G(id1,id2) = weight;
         end
     end
     fprintf('%d / %d pairs skipped.\n', pairs_skipped, pair_count);

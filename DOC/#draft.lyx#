@@ -123,13 +123,8 @@ Formulation
 \begin_layout Standard
 (note: the following two subsections should probably be joined to a single
  that just presents mCCA and says that if P is fixed to the identity along
- the optimization, it just reduces to the ordinary CCA problem and when
- 
-\begin_inset Formula $U,V$
-\end_inset
-
- are fixed, it reduced to the weighted matching problem.
- This may save some space, but will cost in clarity.)
+ the optimization, it just reduces to the ordinary CCA problem.
+ This may save some space.)
 \end_layout
 
 \begin_layout Subsection
@@ -425,12 +420,8 @@ Adding Monolingual Graphs
 \end_layout
 
 \begin_layout Standard
-Under our monolingual graph construction, we would like to encourage learning
- a matching 
-\begin_inset Formula $\Pi$
-\end_inset
-
-, such that that whenever words 
+Recall that under our monolingual graph construction, we expect that whenever
+ words 
 \begin_inset Formula $x\in X$
 \end_inset
 
@@ -438,26 +429,19 @@ Under our monolingual graph construction, we would like to encourage learning
 \begin_inset Formula $y\in Y$
 \end_inset
 
- are matched under 
+ are matched under the  
 \begin_inset Formula $\Pi$
 \end_inset
 
-, their neighbors (on their respective graphs) are also matched under 
+, their neighbors (on their respective graphs) should also be matched under
+ 
 \begin_inset Formula $\Pi$
 \end_inset
 
  (see Figure 1).
- Theoretically, we may want just one or very few pairs of neighbors to match.
- Taking this approach can quickly evolve into integer programming.
- Instead, we choose a relaxed course of action, by encouraging the 
-\emph on
-expected
-\emph default
- 
-\emph on
-pair
-\emph default
- of neighbors to be similar in the latent space.
+ Theoretically, we may want just one or a few pairs of neighbors to match,
+ however we relax this condition by encouraging the expected pair of neighbors
+ to be similar.
  Indeed, consider the 
 \begin_inset Formula $i$
 \end_inset
@@ -470,7 +454,7 @@ th row of the matrix
 \begin_inset Formula $G_{X}$
 \end_inset
 
- is a symmetric, unweighted adjacency matrix.
+ is unweighted.
  In this case the 
 \begin_inset Formula $i$
 \end_inset
@@ -513,8 +497,8 @@ th row of
 \end_layout
 
 \begin_layout Standard
-In the context of the matching CCA algorithm, we now restate the E-step
- as follows: for fixed 
+In the context of the matching CCA problem, we now pose the E-stemp as follows:
+ Fixing 
 \begin_inset Formula $U,V$
 \end_inset
 
@@ -551,7 +535,7 @@ s.t. & \Pi\in\mathbb{P}_{n}
 
 \end_inset
 
-Which is again, the weighted matching problem in 
+This is again, the weighted matching problem in 
 \begin_inset Formula $\Pi$
 \end_inset
 
@@ -560,17 +544,13 @@ Which is again, the weighted matching problem in
 \end_inset
 
 .
- 
-\end_layout
-
-\begin_layout Standard
-The weight matrix 
+ The weight matrix 
 \begin_inset Formula $W$
 \end_inset
 
  balanced between two terms - The first term is the latent space similarity
  matrix implicitly suggested by [Haghighi], and the second is the expected
- latent space similarity between neighbors of samples of 
+ latent space similarity between neighbors of 
 \begin_inset Formula $X$
 \end_inset
 
@@ -578,7 +558,7 @@ The weight matrix
 \begin_inset Formula $G_{X}$
 \end_inset
 
-) and neighbors of samples of 
+) and neighbors of 
 \begin_inset Formula $Y$
 \end_inset
 
@@ -642,7 +622,7 @@ Related Work
 \begin_inset Formula $K_{X},K_{Y}$
 \end_inset
 
- within each set separately, each encoding the similarities within a specific
+ within each set separately, each representing similarities within a specific
  word domain.
  They proceed to treat the kernels as non-linear feature mappings, such
  that the 
@@ -687,12 +667,12 @@ Viewing
 \begin_inset Formula $X$
 \end_inset
 
-, we see that the weight between words 
-\begin_inset Formula $i$
+, we see that the weight between 
+\begin_inset Formula $x_{i}$
 \end_inset
 
  and 
-\begin_inset Formula $j$
+\begin_inset Formula $x_{j}$
 \end_inset
 
  is exactly 
@@ -717,19 +697,19 @@ Viewing
 \begin_layout Standard
 Thus, our work can be seen as combining the best of [Jagaralmudi] and [Haghighi]
 , by exploiting similarities in both the original domain and the latent
- space -- Like [Haghighi] we compute similarities in a common latent space,
- however, the usage of monolingual graphs, non-trivially constructed using
- only domain specific knowledge, encourages learning a matching that also
- respects similarities within each domain.
+ space -- Like [Haghighi] we compute similarities in the latent space, however,
+ the usage of monolingual graphs, non-trivially constructed using domain
+ specific knowledge only, encourages learning a matching that also respects
+ similarities within those domain.
 \end_layout
 
 \begin_layout Standard
 More broadly, the notion of computing similarities on samples that lie on
  a given graph is neatly addressed by the work of [Kondor] on diffusion
  kernels.
- In our case however, there are two sets of data graphs, over two distinct
- domains, and the correspondence between the vertices of one graph and the
- other is unknown a-priori.
+ In our case however, there are two given graphs, over two distinct domains,
+ and the correspondence between the vertices of one graph and the other
+ is unknown a-priori.
 \end_layout
 
 \begin_layout Subsection
