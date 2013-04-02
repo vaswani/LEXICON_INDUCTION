@@ -191,11 +191,12 @@ classdef GMCCA
             X.features  = [X.features(:, frequent), sum(X.features(:,sparse40),2)];
             
             
-            H = Util.knngraph(X.features, options.K+1);
+            %H = Util.knngraph(X.features, options.K+1);
 %           H = Util.epsgraph(X.features, options.K);
-            H = H - eye(size(H,1)); % remove self as neighbor.
-            fprintf('Using %d edges in graph\n', sum(H(:)));
-            X.G     = Util.to_stochastic_graph(H);
+            %H = H - eye(size(H,1)); % remove self as neighbor.
+            %fprintf('Using %d edges in graph\n', sum(H(:)));
+            %X.G     = Util.to_stochastic_graph(H);
+            X.G = source.G;
             %% add log frequency and log length (but don't use them in the graph)
             X.features  = [logFr, log2(L), X.features];
 %            X.features = [X.features, X.G*X.features];

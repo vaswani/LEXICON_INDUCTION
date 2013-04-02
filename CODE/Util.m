@@ -145,6 +145,15 @@ classdef Util
                 G(i,idx(i,:)) = 1;
             end
         end
+        %
+        %function G = makeGraphFromInput(Z,K)
+        %    N = size(Z,1);
+        %    G = zeros(N); % create empty graphs.
+        %    for i=1:N,
+        %        for j=1:N,
+        %        G(i,j) = Z(i,j);
+        %    end
+        %end        
         
         function G = epsgraph(Z,eps)
             N = size(Z,1);
