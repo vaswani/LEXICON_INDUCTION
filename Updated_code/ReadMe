@@ -1,0 +1,12 @@
+Updated Feature Scripts:
+
+getFeatures0.py : Taking care of multiple word words.
+
+get ContextFeatures.py : English, Spanish and French features, multiple word handling, <unknown> handling
+
+getContextFeatures0.py : For handling Chinese and Arabic POS files.
+
+Combine.py and Sort.py : To generate context+ortho features.
+
+GMCCA.m : Source, target and Bilexicon file as arguments. Redirect output to file while running from terminal.
+
