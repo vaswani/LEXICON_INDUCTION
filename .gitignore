@@ -44,3 +44,7 @@ GRAPHS/graph.spanish
 SCRIPTS/.DS_Store
 
 *.lyx~
+
+CODE/cache/pca_A=1428960497_N=2000.mat
+
+CODE/cache/pca_A=656704790_N=2000.mat

@@ -48,7 +48,11 @@ classdef GMCCA
                 assert(size(W_t,1) == size(W_t,2));
                 old_pi = pi_t;
                 %figure; imagesc(W_t(:, pi_t));
+                fprintf('Matching.\n')
+                tic_match = tic();
                 [pi_t, F.cost(t), F.edge_cost{t}] = MatchingUtil.match(W_t(restID,restID), options);                      % compute matching
+                toc_match = toc(tic_match);
+                toc_match
                 % pi_t = Util.randswap(pi_t, 4);
                 Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 F.pi = [pi_t, seed_pi];
@@ -175,8 +179,8 @@ classdef GMCCA
             L           = Util.strlen(X.words);
             X.features(:,1) = [];
             
-            feature_sum = sum(X.features > 0);
-            frequent    = feature_sum >  40; % find features that appear more than X times
+             feature_sum = sum(X.features > 0);
+             frequent    = feature_sum >  30; % find features that appear more than X times
 %              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
 %              sparse20    = feature_sum > 10 & feature_sum <= 20; % find features that appear more than X times
 %              sparse30    = feature_sum > 20 & feature_sum <= 30; % find features that appear more than X times
@@ -187,9 +191,10 @@ classdef GMCCA
 %                             sum(X.features(:,sparse30),2)...
 %                             sum(X.features(:,sparse40),2)]; % take frequent features and collapse rare
 %             
-            sparse40    = feature_sum <= 40;
-            X.features  = [X.features(:, frequent), sum(X.features(:,sparse40),2)];
+             sparse40    = feature_sum <= 30;
+             X.features  = [X.features(:, frequent), sum(X.features(:,sparse40),2)];
             
+            %X.features = Common.cachePCA(X.words, X.features);
             
             %H = Util.knngraph(X.features, options.K+1);
 %           H = Util.epsgraph(X.features, options.K);
@@ -203,6 +208,8 @@ classdef GMCCA
             [N2,D2] = size(X.features);
             fprintf('Setup features from [%d,%d] to [%d,%d].\n', N1,D1, N2,D2);
         end
+        
+        
         
         function matching = getMatching(wordsX, wordsY, F)
             N = length(wordsX);

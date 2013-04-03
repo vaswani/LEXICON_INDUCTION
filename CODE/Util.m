@@ -8,6 +8,10 @@ classdef Util
             % should output [1 2 3 4 5]
         end
         
+         function X=sub(X, mu)
+            X = bsxfun(@minus, X, mu); % faster than repmat.
+        end
+        
         function v=hamming(p,q)
             v=sum(p~=q);
         end

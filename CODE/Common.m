@@ -49,11 +49,20 @@ classdef Common
             end
         end
         
-        function filename = to_editdist_filename(listA, listB)
+        function [hashA, hashB, N] = getFilenameHashes(listA, listB)
             % make a filename basedon the lists.
             hashA = Common.str2hash([listA{:}]); % hash the list to a number
             hashB = Common.str2hash([listB{:}]);
             N = length(listA);
+        end
+        
+        function filename = to_pcamodel_filename(list)
+            [hashA, ~, N] = Common.getFilenameHashes(list, list);
+            filename = ['cache/pca_A=',num2str(hashA), '_N=',num2str(N), '.mat'];
+        end
+        
+        function filename = to_editdist_filename(listA, listB)
+            [hashA, hashB, N] = Common.getFilenameHashes(listA, listB);
             filename = ['cache/ed_A=',num2str(hashA), '_B=', num2str(hashB), '_N=',num2str(N), '.mat'];
         end
         
@@ -67,6 +76,20 @@ classdef Common
                 fprintf('Edit distance file "%s" not found.\n', filename);
                 W = [];
             end
+        end
+        
+        function X = cachePCA(words, X)
+            filename = Common.to_pcamodel_filename(words);
+            if exist(filename, 'file')
+                fprintf('Loading existing PCA model file "%s"', filename);
+                load(filename);
+            else
+                model = PCAUtil.PCA(X);
+                save(filename, 'model');
+                fprintf('Saved  PCA model file "%s"', filename);
+            end
+            d = PCAUtil.getEigenmassDim(model, 0.9); % d top dimensions that capture 90% of the variance in the data
+            X = PCAUtil.project(model, X, d);
         end
         
         function save_editdist_file(listA, listB, W)
