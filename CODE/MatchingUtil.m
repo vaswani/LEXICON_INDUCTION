@@ -111,14 +111,7 @@ classdef MatchingUtil
                 resolution = max(10*0.5^options.t,1e-6);
             end
             fprintf('Matching with resolution=%f\n', resolution);
-            t1 = tic;
             [pi, cost] = MatchingUtil.lapjv(W, resolution);
-            toc(t1);
-            t2 = tic;
-            [A, cost0] = MatchingUtil.munkres(W);
-            [~,pi0]=max(A',[],1);
-            toc(t2);
-            all(pi0==pi)
             edge_cost = MatchingUtil.edge_cost(pi, W);
             if ~isinf(cost) && ~(sum(edge_cost)-cost < 1e-5);
                 keyboard;
