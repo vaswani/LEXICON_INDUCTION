@@ -114,8 +114,10 @@ classdef GMCCA
             %target.filename = './data/es.ortho.v1_es.syns.v1.mat';
 %             source.filename = './data/FEB3_en.features.10k_en.syns.v1.mat';
 %             target.filename = './data/FEB3_es.features.10k_es.syns.v1.mat';
-            source.filename = './data/FEB6_en.features_space.10k_en.syns.v2.mat';
-            target.filename = './data/FEB6_es.features_space.10k_es.syns.v2.mat';
+            %source.filename = './data/FEB6_en.features_space.10k_en.syns.v2.mat';
+            %target.filename = './data/FEB6_es.features_space.10k_es.syns.v2.mat';
+            source.filename = '../datafiles/english_g_all_g_english_30.mat';
+            target.filename = '../datafiles/spanish_g_all_g_spanish_30.mat';
             lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
 
             source = Common.loadMat(source);
@@ -262,7 +264,7 @@ classdef GMCCA
             data_type = 1; % 0=mock data with empty graph, 1=mock data with sparse graph
             data = GMCCA.loadMockData(data_type, N, D, data_noise, graph_noise); 
             % create options
-            T = 20; % at most 200 iterations
+            T = 20; % at most T iterations
             d = D;  % use 30 correlation dims
             weight_type = 'inner'; % inner product similarity
             if data_noise == 0
