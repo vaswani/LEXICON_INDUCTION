@@ -88,7 +88,7 @@ classdef GMCCA
             F.weights = [F.edge_cost{end},-ones(1, length(seed_pi))];     % and add inf weights as well
         end
         
-        function run(exp_id, maxN, lambda, M, K, weight_type)
+        function run(exp_id, maxN, lambda, M, K, weight_type, data_type)
             % exp_id - experiment id, used in output filenames.
             % maxN - the maximum number of samples to consider.
             
@@ -107,18 +107,25 @@ classdef GMCCA
                 
             end
             
-            options = GMCCA.makeOptions(weight_type, T, d, M,lambda,K, max_seed, delta_pm); 
+            options = GMCCA.makeOptions(exp_id, weight_type, T, d, M,lambda,K, max_seed, delta_pm); 
             
             %% DATA
             %source.filename = './data/en.ortho.v1_en.syns.v1.mat';
             %target.filename = './data/es.ortho.v1_es.syns.v1.mat';
 %             source.filename = './data/FEB3_en.features.10k_en.syns.v1.mat';
 %             target.filename = './data/FEB3_es.features.10k_es.syns.v1.mat';
-            %source.filename = './data/FEB6_en.features_space.10k_en.syns.v2.mat';
-            %target.filename = './data/FEB6_es.features_space.10k_es.syns.v2.mat';
-            source.filename = '../datafiles/english_g_all_g_english_30.mat';
-            target.filename = '../datafiles/spanish_g_all_g_spanish_30.mat';
-            lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
+            fprintf('exp_id=%d, data_type=%d\n', exp_id, data_type);
+            if data_type == 0
+                source.filename = './data/FEB6_en.features_space.10k_en.syns.v2.mat';
+                target.filename = './data/FEB6_es.features_space.10k_es.syns.v2.mat';
+                lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
+            elseif data_type == 2
+                
+            elseif data_type == 3
+                source.filename = '../datafiles/english_g_all_g_english_30.mat';
+                target.filename = '../datafiles/spanish_g_all_g_spanish_30.mat';
+                lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
+            end
 
             source = Common.loadMat(source);
             target = Common.loadMat(target);
@@ -134,6 +141,7 @@ classdef GMCCA
             data.seed.match = match;
             data.seed.N = length(match.source);
             results.edit_distance = [data.X.words(match.all.source), data.Y.words(match.all.target), (mat2cell(match.all.weights', ones(maxN,1)))];
+            results.seed = [data.X.words(match.source), data.Y.words(match.target)];
             Common.outputCSV(exp_id,'edit_distance', results.edit_distance);
             
             %% evaluate edit_distance matching
@@ -148,7 +156,6 @@ classdef GMCCA
             [data.X] = GMCCA.fix_matched_words(data.X, match.source);
             [data.Y] = GMCCA.fix_matched_words(data.Y, match.target);
             %init_alignment = GMCCA.getAlignment(data.X.words, data.Y.words)
-            
             
             data.source = source;
             data.target = target;
@@ -181,9 +188,41 @@ classdef GMCCA
             L           = Util.strlen(X.words);
             X.features(:,1) = [];
             
-             feature_sum = sum(X.features > 0);
-             frequent    = feature_sum >  30; % find features that appear more than X times
-%              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
+            
+            % cases to check 
+            % 0, full set of features
+            % 1, sparse summed up
+            % 2, ortho, full
+            % 3, ortho, sparse
+            % 4, context, sparse
+            % 5, context, full
+            exp_id = options.exp_id;
+            if exp_id == 1
+                feature_sum = sum(X.features > 0);
+                frequent    = feature_sum > 40; % find features that appear more than X times
+                sparse40    = feature_sum <= 40;
+                X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
+            elseif exp_id == 2
+                X.features  = X.features(:, 1:end-2000);
+            elseif exp_id == 3
+                X.features  = X.features(:, 1:end-2000);
+                feature_sum = sum(X.features > 0);
+                frequent    = feature_sum > 40; % find features that appear more than X times
+                sparse40    = feature_sum <= 40;
+                X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
+            elseif exp_id == 4
+                X.features  = log(1+X.features(:, (end-1999):end));
+                
+            elseif exp_id == 5
+                X.features  = log(1+X.features(:, (end-1999):end));
+                feature_sum = sum(X.features > 0);
+                frequent    = feature_sum > 40; % find features that appear more than X times
+                sparse40    = feature_sum <= 40;
+                X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
+            
+            end
+            
+            %              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
 %              sparse20    = feature_sum > 10 & feature_sum <= 20; % find features that appear more than X times
 %              sparse30    = feature_sum > 20 & feature_sum <= 30; % find features that appear more than X times
 %              sparse40    = feature_sum > 30 & feature_sum <= 40; % find features that appear more than X times
@@ -193,8 +232,7 @@ classdef GMCCA
 %                             sum(X.features(:,sparse30),2)...
 %                             sum(X.features(:,sparse40),2)]; % take frequent features and collapse rare
 %             
-             sparse40    = feature_sum <= 30;
-             X.features  = [X.features(:, frequent), sum(X.features(:,sparse40),2)];
+
             
             %X.features = Common.cachePCA(X.words, X.features);
             
@@ -312,7 +350,8 @@ classdef GMCCA
     
     methods(Static, Access=private)
         
-        function options = makeOptions(weight_type, T, d, M, lambda, K, max_seed, delta_pm)
+        function options = makeOptions(exp_id, weight_type, T, d, M, lambda, K, max_seed, delta_pm)
+            options.exp_id = exp_id;
             options.T = T;                         % MAX "EM" ITERATIONS
             options.weight_type = weight_type;     % commput 'inner' or 'dist' weight.
             options.d = d;                         % ignore this.
@@ -381,7 +420,7 @@ classdef GMCCA
             
             data.X.features = GMCCA.random_rotate_shift(data.X.features);
             data.Y.features = GMCCA.random_rotate_shift(data.Y.features);
-            % fix the seed to the beginning
+            % fix the seed to the end
             [data.X] = GMCCA.fix_matched_words(data.X, seed);
             [data.Y] = GMCCA.fix_matched_words(data.Y, seed);
             
