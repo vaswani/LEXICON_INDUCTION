@@ -120,7 +120,9 @@ classdef GMCCA
                 target.filename = './data/FEB6_es.features_space.10k_es.syns.v2.mat';
                 lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
             elseif data_type == 2
-                
+                source.filename = '../datafiles/english_1_conxt_sp_english_1_30.mat';
+                target.filename = '../datafiles/spanish_1_conxt_sp_spanish_1_30.mat';
+                lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
             elseif data_type == 3
                 source.filename = '../datafiles/english_g_all_g_english_30.mat';
                 target.filename = '../datafiles/spanish_g_all_g_spanish_30.mat';
