@@ -77,8 +77,8 @@ context_features = defaultdict(lambda:defaultdict(int))
 for i,word in enumerate(word_list) :
     if word in nouns and tag_list[i] in noun_tags:
         #looking at the left window
-        for j,window in enumerate(word_list[i-4:i]):
-            if tag_list[i-(4-j)] in noun_tags and word_list[i-(4-j)] in nouns:
+        for j,window in enumerate(word_list[max(0,i-4):i]):
+            if tag_list[max(0,i-(4-j))] in noun_tags and word_list[max(0,i-(4-j))] in nouns:
                 context_features[word][window] += 1     
         #looking at the right window
         for j,window in enumerate(word_list[i+1:i+5]):
