@@ -25,7 +25,7 @@ for line in open(sys.argv[1]):
                 word = '/'.join(arr[0:len(arr)-1])
 
         
-        word_list.append(word)
+        word_list.append(word.lower())
         tag_list.append(tag)
 
 counter = 0
@@ -64,7 +64,7 @@ for line in open(sys.argv[2]):
     elif(len(temp) == 2):
         nouns[temp[1]] = 1
     else:
-        nouns['~'.join(temp[1:])] = 1
+        nouns['_'.join(temp[1:])] = 1
 
 #print 'the size of nouns is ',len(nouns)
 #raw_input()
@@ -90,4 +90,4 @@ for i,word in enumerate(word_list) :
 for noun in nouns:
     #print 'the size of the feature list for nouns is ',len(context_features[noun])
     #raw_input()
-    print "%s\t%s"%('_' + noun + '_',' '.join(repr(context_features[noun][word]) for word in nouns))
+    print "%s %s"%('_' + noun + '_',' '.join(repr(context_features[noun][word]) for word in nouns))

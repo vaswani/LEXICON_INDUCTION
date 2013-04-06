@@ -15,12 +15,10 @@ for line in open(sys.argv[1]):
     lowercased_word = templist[len(templist)-1]
     tag =  templist[len(templist)-2]
     word = '_'.join(templist[0:len(templist)-2])
+    word = word.replace("-","_")
 
-    #Change in code to take care of <unknown> lemma
-    if ( lowercased_word == '<unknown>'):
-        word_list.append(word)
-    else:
-        word_list.append(lowercased_word)
+    
+    word_list.append(word.lower())
     #rest as is    
     tag_list.append(tag)
 
@@ -62,9 +60,13 @@ for line in open(sys.argv[2]):
     if(len(temp) < 2):
         print 'error in freq noun file'
     elif(len(temp) == 2):
-        nouns[temp[1]] = 1
+        word = temp[1]
+        word = word.replace("-","_")
+        nouns[word] = 1
     else:
-        nouns['~'.join(temp[1:])] = 1
+        word = '_'.join(temp[1:]);
+        word = word.replace("-","_")
+        nouns[word] = 1
 
 #print 'the size of nouns is ',len(nouns)
 #raw_input()
