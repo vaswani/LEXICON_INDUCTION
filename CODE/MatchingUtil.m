@@ -114,8 +114,8 @@ classdef MatchingUtil
             [pi, cost] = MatchingUtil.lapjv(W, resolution);
             edge_cost = MatchingUtil.edge_cost(pi, W);
             if ~isinf(cost) && ~(sum(edge_cost)-cost < 1e-3);
-                sum(edge_cost)-cost
-                keyboard;
+                fprintf('WARNING: cost - sum(edge_cost) differce is high = %f\n', sum(edge_cost)-cost);
+                fprintf('This may happen is the resolution is too large.\n');
             end
         end
         
