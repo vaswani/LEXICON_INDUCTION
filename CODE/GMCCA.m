@@ -186,9 +186,10 @@ classdef GMCCA
             X.features  = source.features(pi,:); % sort words by frequency
             X.words     = source.words(pi);
             
+            % it is assumed that the first feature is the frequency of a word.
             logFr       = log2(X.features(:,1)); % replce frequency to log2(freq)
             L           = Util.strlen(X.words);
-            X.features(:,1) = [];
+            %X.features(:,1) = [];
             
             
             % cases to check 
@@ -201,8 +202,8 @@ classdef GMCCA
             exp_id = options.exp_id;
             if exp_id == 1
                 feature_sum = sum(X.features > 0);
-                frequent    = feature_sum > 40; % find features that appear more than X times
-                sparse40    = feature_sum <= 40;
+                frequent    = feature_sum > 150; % find features that appear more than X times
+                sparse40    = feature_sum <= 150;
                 X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
             elseif exp_id == 2
                 X.features  = X.features(:, 1:end-2000);
@@ -221,7 +222,6 @@ classdef GMCCA
                 frequent    = feature_sum > 40; % find features that appear more than X times
                 sparse40    = feature_sum <= 40;
                 X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
-            
             end
             
             %              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
@@ -245,7 +245,8 @@ classdef GMCCA
             %X.G     = Util.to_stochastic_graph(H);
             X.G = source.G;
             %% add log frequency and log length (but don't use them in the graph)
-            X.features  = [logFr, log2(L), X.features];
+            %X.features  = [logFr, log2(L), X.features];
+            X.features  = [log2(L), log(X.features+1)];
 %            X.features = [X.features, X.G*X.features];
             [N2,D2] = size(X.features);
             fprintf('Setup features from [%d,%d] to [%d,%d].\n', N1,D1, N2,D2);
