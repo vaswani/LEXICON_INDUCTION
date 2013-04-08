@@ -128,6 +128,10 @@ classdef GMCCA
                 source.filename = '../datafiles/english_g_all_g_english_30.mat';
                 target.filename = '../datafiles/spanish_g_all_g_spanish_30.mat';
                 lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
+            elseif data_type == 4
+                source.filename = '../SAMPLE_CONTEXT_FEATURES/context_europarl.en.mat';
+                target.filename = '../SAMPLE_CONTEXT_FEATURES/context_europarl.es.mat';
+                lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
             end
 
             source = Common.loadMat(source);
@@ -203,7 +207,7 @@ classdef GMCCA
             % 4, context, sparse
             % 5, context, full
             exp_id = options.exp_id;
-            V = 800;
+            V = 600;
             if exp_id == 1
                 feature_sum = sum(X.features > 0);
                 frequent    = feature_sum > V; % find features that appear more than X times
@@ -224,14 +228,14 @@ classdef GMCCA
                 feature_sum = sum(X.features > 0);
                 frequent    = feature_sum > V; % find features that appear more than X times
                 sparse      = ~frequent;
-                X.features  = log2(1+X.features(:, (end-1999):end));
+                X.features  = log2(1+X.features);
                 
                 X.features  = [X.features(:, frequent), mean(X.features(:,sparse),2)];
             end
             
-%              Z = (sum(abs(X.features),2));
-%              Z(Z==0) = 1;
-%              X.features = bsxfun(@rdivide, X.features, Z);
+             Z = sqrt(sum(abs(X.features).^2,2));
+             Z(Z==0) = 1;
+             X.features = bsxfun(@rdivide, X.features, Z);
             
             
             %              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times

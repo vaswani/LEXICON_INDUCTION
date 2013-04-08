@@ -66,3 +66,15 @@ Haghighi/*
 CODE/cache/ed_A=1951479104_B=417195797_N=2000.mat
 
 DATA/en-es/context.pl
+
+SAMPLE_CONTEXT_FEATURES/context_europarl.en.mat
+
+SAMPLE_CONTEXT_FEATURES/context_europarl.es.mat
+
+CODE/cache/ed_A=1302076955_B=123222314_N=2000.mat
+
+SAMPLE_CONTEXT_FEATURES/context_features.es
+
+SAMPLE_CONTEXT_FEATURES/context_features.en
+
+SAMPLE_CONTEXT_FEATURES/context_features.en
