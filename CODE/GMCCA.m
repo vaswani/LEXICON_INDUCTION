@@ -57,7 +57,7 @@ classdef GMCCA
                 Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 F.pi = [pi_t, seed_pi];
                 F.weights = [F.edge_cost{end}, -inf(1, N.fX)];
-                GMCCA.getMatching(data.X.words, data.Y.words, F);
+                GMCCA.getMatching(data.X.words, data.Y.words, F)
                 % log and output
                 %F.normXY(t) = norm(Z.X-Z.Y,'fro');
                 %F.normX(t)  = norm(Z.X, 'fro');
@@ -86,6 +86,7 @@ classdef GMCCA
             F.end = toc(start);
             F.pi = [pi_t, seed_pi];                                     % augment the seed to the end
             F.weights = [F.edge_cost{end},-ones(1, length(seed_pi))];     % and add inf weights as well
+            F.cca_model = cca_model;
         end
         
         function run(exp_id, maxN, lambda, M, K, weight_type, data_type)
@@ -96,15 +97,15 @@ classdef GMCCA
             fprintf('------------- Starting -----------\n');
             %weight_type = 'dist'; % 'inner or 'dist'
             
-            T = 30;  % at most 30 iterations
+            
             delta_pm = 0.05;
+            T = (1/delta_pm) + 5;  % at most 30 iterations
             max_seed = 300;
             d = 0;
             if nargin < 3
                 lambda = 0; % diffusion rate
                 M = 1;   % random walk steps
-                K = 20; % number of neighbors
-                
+                K = 20; % number of neighbors 
             end
             
             options = GMCCA.makeOptions(exp_id, weight_type, T, d, M,lambda,K, max_seed, delta_pm); 
@@ -139,7 +140,7 @@ classdef GMCCA
             
             % figure out initial matching.
             % for now, based on edit-distance
-            match = MatchingUtil.init_matching(data.X.words, data.Y.words, 1, options.max_seed);
+            match = MatchingUtil.init_matching(data.X.words, data.Y.words, 2, options.max_seed);
             data.seed.match = match;
             data.seed.N = length(match.source);
             results.edit_distance = [data.X.words(match.all.source), data.Y.words(match.all.target), (mat2cell(match.all.weights', ones(maxN,1)))];
@@ -151,6 +152,7 @@ classdef GMCCA
             source_no_seed = setdiff(1:maxN,match.source);
             target_no_seed = setdiff(1:maxN,match.target);
             gtlex = BilexiconUtil.ground_truth(lex, data.X.words(source_no_seed), data.Y.words(target_no_seed));
+            lex = []; % remove from memory in case lex is big.
             matching.edit_dist = GMCCA.getMatching(data.X.words(match.all.source), data.Y.words(match.all.target), match.all);
             scores.edit_dist   = BilexiconUtil.getF1scores(gtlex, matching.edit_dist(:,2:3), cell2mat(matching.edit_dist(:,4)));
             BilexiconUtil.outputScores(scores.edit_dist, options, 'Edit Distance');
@@ -187,9 +189,10 @@ classdef GMCCA
             X.words     = source.words(pi);
             
             % it is assumed that the first feature is the frequency of a word.
-            logFr       = log2(X.features(:,1)); % replce frequency to log2(freq)
+            freq = X.features(:,1);
+            logFr       = log2(freq); % replce frequency to log2(freq)
             L           = Util.strlen(X.words);
-            %X.features(:,1) = [];
+            X.features(:,1) = [];
             
             
             % cases to check 
@@ -200,29 +203,36 @@ classdef GMCCA
             % 4, context, sparse
             % 5, context, full
             exp_id = options.exp_id;
+            V = 800;
             if exp_id == 1
                 feature_sum = sum(X.features > 0);
-                frequent    = feature_sum > 150; % find features that appear more than X times
-                sparse40    = feature_sum <= 150;
-                X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
+                frequent    = feature_sum > V; % find features that appear more than X times
+                sparse      = ~frequent;
+                X.features  = [X.features(:, frequent), mean(X.features(:,sparse),2)];
+                
             elseif exp_id == 2
                 X.features  = X.features(:, 1:end-2000);
             elseif exp_id == 3
                 X.features  = X.features(:, 1:end-2000);
                 feature_sum = sum(X.features > 0);
-                frequent    = feature_sum > 40; % find features that appear more than X times
-                sparse40    = feature_sum <= 40;
-                X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
+                frequent    = feature_sum > V; % find features that appear more than X times
+                sparse      = ~frequent;
+                X.features  = [X.features(:, frequent), mean(X.features(:,sparse),2)];
             elseif exp_id == 4
-                X.features  = log(1+X.features(:, (end-1999):end));
-                
+                X.features  = log2(1+X.features(:, (end-1999):end));
             elseif exp_id == 5
-                X.features  = log(1+X.features(:, (end-1999):end));
                 feature_sum = sum(X.features > 0);
-                frequent    = feature_sum > 40; % find features that appear more than X times
-                sparse40    = feature_sum <= 40;
-                X.features  = [X.features(:, frequent), mean(X.features(:,sparse40),2)];
+                frequent    = feature_sum > V; % find features that appear more than X times
+                sparse      = ~frequent;
+                X.features  = log2(1+X.features(:, (end-1999):end));
+                
+                X.features  = [X.features(:, frequent), mean(X.features(:,sparse),2)];
             end
+            
+%              Z = (sum(abs(X.features),2));
+%              Z(Z==0) = 1;
+%              X.features = bsxfun(@rdivide, X.features, Z);
+            
             
             %              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
 %              sparse20    = feature_sum > 10 & feature_sum <= 20; % find features that appear more than X times
@@ -245,8 +255,7 @@ classdef GMCCA
             %X.G     = Util.to_stochastic_graph(H);
             X.G = source.G;
             %% add log frequency and log length (but don't use them in the graph)
-            %X.features  = [logFr, log2(L), X.features];
-            X.features  = [log2(L), log(X.features+1)];
+            X.features  = [logFr, log2(L), X.features];
 %            X.features = [X.features, X.G*X.features];
             [N2,D2] = size(X.features);
             fprintf('Setup features from [%d,%d] to [%d,%d].\n', N1,D1, N2,D2);

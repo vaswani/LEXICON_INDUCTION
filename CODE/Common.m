@@ -16,10 +16,10 @@ classdef Common
             end
         end
         
-        function lookup=lookupNeighbors(X, word_id)
+        function lookup=lookupNeighbors(X, word_id, G)
             % given word id, looks up its neighbors in the graph.
             lookup.word = X.id2word.get(word_id);
-            row = X.G(word_id,:);
+            row = G(word_id,:);
             lookup.id = word_id;
             j = 1;
             for ngbr_id = find(row), 
