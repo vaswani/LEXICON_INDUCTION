@@ -221,7 +221,11 @@ Here,
 \noun off
 \color none
 as 
-\begin_inset Formula $Tr[U^{T}X^{T}YV]=Tr[YVU^{T}X^{T}]=\sum_{i=1}^{n}\langle Ux_{i},Vy_{i}\rangle$
+\begin_inset Formula 
+\[
+Tr[U^{T}X^{T}YV]=Tr[YVU^{T}X^{T}]=\sum_{i=1}^{n}\langle Ux_{i},Vy_{i}\rangle
+\]
+
 \end_inset
 
  we see it as a sum of similarities between the matched sample pairs 

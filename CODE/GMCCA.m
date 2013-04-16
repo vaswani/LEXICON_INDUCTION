@@ -38,9 +38,24 @@ classdef GMCCA
                 
                 top_matches = find(F.weights <= sorted_weights(pm.length));
                 % compute latent representation model under partial matching
-                cca_model = CCAUtil.latentCCA(featuresX(top_matches,:), featuresY(top_matches,:), options);  
+                ichol.modelX = ICD.ichol_data(featuresX(top_matches,:), options.eta);
+                ichol.modelY = ICD.ichol_data(featuresY(top_matches,:), options.eta);
+                ichol.seedX  = ICD.getRepresentations_data(featuresX(top_matches,:), ichol.modelX);
+                ichol.seedY  = ICD.getRepresentations_data(featuresY(top_matches,:), ichol.modelY);
+                
+                dX = norm(ichol.modelX.K - ichol.seedX * ichol.seedX','fro'); % this should be small 
+                dY = norm(ichol.modelY.K - ichol.seedY * ichol.seedY','fro'); % this should be small
+                fprintf('distance from linear kernel [dX,dY]=[%2.2f,%2.2f]\n', dX,dY);
+                
+                cca_model = CCAUtil.latentCCA(ichol.seedX, ichol.seedY, options);
+                %cca_model = CCAUtil.latentCCA(featuresX(top_matches,:), featuresY(top_matches,:), options);
+
+                fprintf('P={'), fprintf('%2.2f, ', cca_model.p); fprintf('}\n');
                 % using model, compute latent representation of entire matching
-                Z = CCAUtil.getLatent(cca_model, featuresX, featuresY);
+                ichol.allX = ICD.getRepresentations_data(featuresX, ichol.modelX);
+                ichol.allY = ICD.getRepresentations_data(featuresY, ichol.modelY);
+                %Z = CCAUtil.getLatent(cca_model, featuresX, featuresY);
+                Z = CCAUtil.getLatent(cca_model, ichol.allX, ichol.allY);
                 
                 Z.Y    = Z.Y([inv_pi,seed_pi],:);                                                % permute back.
                 W_t    = MatchingUtil.makeWeights(options, Z.X, Z.Y, data.X.G, data.Y.G);       % compute weights 
@@ -54,10 +69,15 @@ classdef GMCCA
                 toc_match = toc(tic_match);
                 toc_match
                 % pi_t = Util.randswap(pi_t, 4);
-                Util.is_perm(pi_t); %% assert pi_t is a valid permutation
                 F.pi = [pi_t, seed_pi];
+                Fpi = Common.str2hash(num2str(F.pi))
                 F.weights = [F.edge_cost{end}, -inf(1, N.fX)];
-                GMCCA.getMatching(data.X.words, data.Y.words, F)
+                matching.mcca = GMCCA.getMatching(data.X.words, data.Y.words, F);
+                if isfield(options, 'gtlex')
+                    scores.mcca = BilexiconUtil.getF1scores(options.gtlex, matching.mcca(:,2:3), cell2mat(matching.mcca(:,4)));
+                    BilexiconUtil.outputScores(scores.mcca, options, 'MCCA');
+                end
+                
                 % log and output
                 %F.normXY(t) = norm(Z.X-Z.Y,'fro');
                 %F.normX(t)  = norm(Z.X, 'fro');
@@ -98,8 +118,8 @@ classdef GMCCA
             %weight_type = 'dist'; % 'inner or 'dist'
             
             
-            delta_pm = 0.05;
-            T = (1/delta_pm) + 5;  % at most 30 iterations
+            delta_pm = 1/36;
+            T = 30;  % at most 30 iterations
             max_seed = 300;
             d = 0;
             if nargin < 3
@@ -132,6 +152,10 @@ classdef GMCCA
                 source.filename = '../SAMPLE_CONTEXT_FEATURES/context_europarl.en.mat';
                 target.filename = '../SAMPLE_CONTEXT_FEATURES/context_europarl.es.mat';
                 lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
+            elseif data_type == 5
+                source.filename = '../SAMPLE_CONTEXT_FEATURES/context_europarl.en.2.mat';
+                target.filename = '../SAMPLE_CONTEXT_FEATURES/context_europarl.es.2.mat';
+                lexicon.filename = 'data/wiktionary_bilexicon_en-es.mat'; 
             end
 
             source = Common.loadMat(source);
@@ -161,6 +185,7 @@ classdef GMCCA
             scores.edit_dist   = BilexiconUtil.getF1scores(gtlex, matching.edit_dist(:,2:3), cell2mat(matching.edit_dist(:,4)));
             BilexiconUtil.outputScores(scores.edit_dist, options, 'Edit Distance');
             
+            importdata('seed_en-es.txt');
             [data.X] = GMCCA.fix_matched_words(data.X, match.source);
             [data.Y] = GMCCA.fix_matched_words(data.Y, match.target);
             %init_alignment = GMCCA.getAlignment(data.X.words, data.Y.words)
@@ -172,6 +197,7 @@ classdef GMCCA
             options.d = min(Util.mass_to_dim(data.X.features, p), Util.mass_to_dim(data.Y.features, p)); % use d correlation dims  
             
             fprintf('rank(X)=%d, rank(Y)=%d\n',rank(data.X.features), rank(data.Y.features));
+            options.gtlex = gtlex;
             F = GMCCA.find_matching(options, data);
             
             %% output
@@ -198,7 +224,6 @@ classdef GMCCA
             L           = Util.strlen(X.words);
             X.features(:,1) = [];
             
-            
             % cases to check 
             % 0, full set of features
             % 1, sparse summed up
@@ -207,13 +232,12 @@ classdef GMCCA
             % 4, context, sparse
             % 5, context, full
             exp_id = options.exp_id;
-            V = 600;
+            V = 40;
             if exp_id == 1
                 feature_sum = sum(X.features > 0);
                 frequent    = feature_sum > V; % find features that appear more than X times
                 sparse      = ~frequent;
                 X.features  = [X.features(:, frequent), mean(X.features(:,sparse),2)];
-                
             elseif exp_id == 2
                 X.features  = X.features(:, 1:end-2000);
             elseif exp_id == 3
@@ -233,9 +257,9 @@ classdef GMCCA
                 X.features  = [X.features(:, frequent), mean(X.features(:,sparse),2)];
             end
             
-             Z = sqrt(sum(abs(X.features).^2,2));
-             Z(Z==0) = 1;
-             X.features = bsxfun(@rdivide, X.features, Z);
+              Z = sqrt(sum(abs(X.features).^2,2));
+              Z(Z==0) = 1;
+              X.features = bsxfun(@rdivide, X.features, Z);
             
             
             %              sparse10    = feature_sum >= 0 & feature_sum <= 10; % find features that appear more than X times
@@ -303,12 +327,12 @@ classdef GMCCA
         function hamdist = sanityCheck(seed, data_noise, graph_noise, lambda_coeff, M, K)
             if nargin == 0
                 seed = 3;
-                data_noise   = 0.7;
+                data_noise   = 0.5;
                 graph_noise  = 0;
-                lambda_coeff = 1;
+                lambda_coeff = 0;
                 K = 20;
-                M = 1;
-                max_seed = 100;
+                M = 0;
+                max_seed = 200;
                 delta_pm = 0.05;
             end
             rng(seed);
@@ -326,7 +350,7 @@ classdef GMCCA
             else
                 lambda = lambda_coeff * data_noise;
             end
-            options = GMCCA.makeOptions(weight_type, T, d, M, lambda, K, max_seed, delta_pm); 
+            options = GMCCA.makeOptions(1, weight_type, T, d, M, lambda, K, max_seed, delta_pm); 
             F=GMCCA.find_matching(options, data);
             
             alignment = GMCCA.getMatching(data.X.words, data.Y.words, F);
@@ -378,6 +402,7 @@ classdef GMCCA
             % try M=1, lambda>1 first.
             options.max_seed = max_seed;           % maximum length of seed.
             options.delta_pm = delta_pm;           % increment percent of partial matching 
+            options.eta = 0.001;                   % ICD parameter.
         end
         
         function v=hamming(p,q)

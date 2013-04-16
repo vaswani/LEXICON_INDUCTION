@@ -19,6 +19,6 @@
 %F.features = 'FEB6_en.features_space.10k';
 %F.syns = 'en.syns.v2';
 
-F.features = 'context_features.es';
+F.features = 'context_features.en.2';
 F.syns = '';
 lexsyn2mat(F);
