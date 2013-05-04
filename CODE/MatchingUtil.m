@@ -108,15 +108,51 @@ classdef MatchingUtil
             if nargin < 2
                 resolution = 1e-4;
             else
-                resolution = max(0.5^options.t,1e-6);
+                resolution = 1e-4; %max(0.5^options.t,1e-6);
             end
-            fprintf('Matching with resolution=%f\n', resolution);
-            [pi, cost] = MatchingUtil.lapjv(W, resolution);
+            mode = 'approx';
+            if strcmpi(mode, 'lapjv')
+                fprintf('Matching with lapjv, resolution=%f\n', resolution);
+                [pi, cost] = MatchingUtil.lapjv(W, resolution);
+            elseif strcmpi(mode, 'munkers')
+                fprintf('Matching with munkers\n');
+                [pi, cost] = MatchingUtil.munkres(W);
+                [~,pi] = max(pi,[],2);
+                pi = pi';
+            elseif strcmpi(mode, 'approx')
+                fprintf('Matching with approx\n');
+                [pi, cost] = MatchingUtil.approxMatch(W);
+            end
+            assert(length(pi)==length(unique(pi)));
             edge_cost = MatchingUtil.edge_cost(pi, W);
             if ~isinf(cost) && ~(sum(edge_cost)-cost < 1e-3);
                 fprintf('WARNING: cost - sum(edge_cost) differce is high = %f\n', sum(edge_cost)-cost);
                 fprintf('This may happen is the resolution is too large.\n');
             end
+        end
+        
+        function [pi, cost]=approxMatch(C)
+            N = size(C,1);
+            left = zeros(N,1);
+            right = zeros(N,1);
+            I = repmat(1:N,N,1)';
+            J = I';
+            I = I(:); J = J(:);
+            [S,sigma] = sort(C(:));
+            M = length(sigma);
+            cost = 0;
+            pi = zeros(1,N);
+            for m=1:M,
+                i = I(sigma(m));
+                j = J(sigma(m));
+                if ~( left(i) || right(j) )
+                    pi(i) = j;
+                    cost = cost + C(i,j);
+                    left(i) = 1;
+                    right(j) = 1;
+                end
+            end
+            
         end
         
         function [rowsol,cost,v,u,costMat] = lapjv(costMat,resolution)
@@ -528,7 +564,7 @@ classdef MatchingUtil
                 while 1
                     %**************************************************************************
                     %   STEP 4: Find a noncovered zero and prime it.  If there is no starred
-                    %           zero in the row containing this primed zero, Go to Step 5.  
+d                    %           zero in the row containing this primed zero, Go to Step 5.  
                     %           Otherwise, cover this row and uncover the column containing 
                     %           the starred zero. Continue in this manner until there are no 
                     %           uncovered zeros left. Save the smallest uncovered value and 

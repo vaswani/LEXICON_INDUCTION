@@ -118,6 +118,26 @@ classdef Common
             
             fclose(fid);
         end
+        
+        function A=loadSeed(filename)
+            fid = fopen(filename);
+            j = 1;
+            while 1 % read lines one by one.
+                line = fgetl(fid);
+                if ~ischar(line) 
+                    break 
+                end
+                pat = '(\S+)\s+(\S+)'; % the pattern to extract.
+                matches = regexp(line, pat ,'tokens');
+                matches = matches{1};
+                word1      = matches{1};
+                word2      = matches{2};
+                A{j,1} = word1;
+                A{j,2} = word2;
+                j = j + 1;
+            end
+            fclose(fid);
+        end
     end
 end
 

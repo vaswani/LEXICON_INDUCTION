@@ -1,0 +1,17 @@
+Implementation of the following paper:
+Aria Haghighi, Percy Liang, Taylor Berg-Kirkpatrick, and Dan Klein.
+Learning Bilingual Lexicons from Monolingual Corpora.
+ACL 2008.
+http://www.cs.berkeley.edu/~aria42/pubs/acl2008-unsup-bilexicon.pdf
+
+Release date: Feb 1, 2009
+
+=========== Compling
+make
+
+=========== Running
+To run (an example):
+java -classpath fig.jar:util.jar:Jama-1.0.2.jar:iText-2.1.0.jar:UnsupLexCCA.jar inducer.DictionaryInducerTester ++base.conf
+
+This reads the corpus from en-es/ and outputs to output/.
+Modify base.conf if necessary.

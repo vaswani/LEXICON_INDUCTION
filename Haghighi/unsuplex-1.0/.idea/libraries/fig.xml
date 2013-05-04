@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="fig">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/fig.jar!/" />
+      <root url="jar://$PROJECT_DIR$/iText-2.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Jama-1.0.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/util.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
