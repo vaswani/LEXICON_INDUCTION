@@ -2,17 +2,22 @@
 
 import sys
 import numpy
-import scipy
-
-class Words:
-    pass
 
 num_items = int(sys.argv[1])
 dim = int(sys.argv[2])
 epsilon = float(sys.argv[3])
 #q = float(  )
+
+
+Z = numpy.random.randn(num_items, dim)
+print Z
+
+class Words:
+    pass
 X = Words();
+Y = WordS();
 X.words = numpy.array(xrange(num_items))
-X.Z = numpy.random.multivariate_normal(numpy.zeros(dim),numpy.identity(dim),num_items)
-print X.Z
-X.G = numpy.zeros((num_items,num_items),dtype=numpy.int32)
+
+X.features = Z;
+X.G = numpy.zeros((num_items,num_items),dtype=numpy.float)
+
