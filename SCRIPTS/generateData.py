@@ -15,3 +15,4 @@ X = Words();
 X.words = numpy.array(xrange(num_items))
 X.Z = numpy.random.multivariate_normal(numpy.zeros(dim),numpy.identity(dim),num_items)
 print X.Z
+X.G = numpy.zeros((num_items,num_items),)
