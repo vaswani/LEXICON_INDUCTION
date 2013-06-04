@@ -152,7 +152,6 @@ classdef MatchingUtil
                     right(j) = 1;
                 end
             end
-            
         end
         
         function [rowsol,cost,v,u,costMat] = lapjv(costMat,resolution)
