@@ -48,6 +48,6 @@ eps = float(sys.argv[3])
 # make X,Y mock data
 (X, Y, pi) = make(N, D, eps)
 # write to CSV files
-IO.writeCSV('mockX.txt', X)
-IO.writeCSV('mockY.txt', Y)
+IO.writeWords('mockX.txt', X)
+IO.writeWords('mockY.txt', Y)
 # now need to save

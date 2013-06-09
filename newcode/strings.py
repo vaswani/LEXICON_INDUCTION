@@ -1,10 +1,10 @@
-__author__ = 'Tomer'
 from common import *
 
 
 def strlen(a):
     v = np.array([len(a[i]) for i in xrange(len(a))])
     return v
+
 
 def pweditdist(X, Y):
     NX = X.size
@@ -14,7 +14,6 @@ def pweditdist(X, Y):
         for j,y in enumerate(Y):
             D[i,j] = editdist(x,y)
     return D
-
 
 
 def editdist(seq1, seq2):
