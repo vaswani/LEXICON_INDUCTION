@@ -9,7 +9,7 @@ def med(X, Y): # match edit distance
     # 1. evaluate the matching result (need a dictionary)
     # 2. save the edit distance permutation - filename should be dependent on the order of lists.
     # 3. set up an initial matching based on edit distance.
-
+    print pi
     return cost, pi
 
 if __name__ == '__main__':
