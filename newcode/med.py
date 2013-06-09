@@ -7,8 +7,6 @@ def med(X, Y): # match edit distance
     D = strings.pweditdist(X, Y)
     (cost, pi, edge_cost) = MU.ApproxMatch(D)
     # TODO:
-    # 1. evaluate the matching result (need a dictionary)
-    # 2. save the edit distance permutation - filename should be dependent on the order of lists.
     # 3. set up an initial matching based on edit distance.
     return pi
 

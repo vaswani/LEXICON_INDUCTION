@@ -1,12 +1,12 @@
 from common import *
 
 
-def strlen(a):
+def strlen(a): # given an array of strings, returns an array of string lengths
     v = np.array([len(a[i]) for i in xrange(len(a))])
     return v
 
 
-def pweditdist(X, Y):
+def pweditdist(X, Y): # computes the pairwise edit-distance between lists of words X and Y
     NX = X.size
     NY = Y.size
     D = np.zeros((NX, NY))
