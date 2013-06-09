@@ -8,7 +8,7 @@ classdef Util
             % should output [1 2 3 4 5]
         end
         
-         function X=sub(X, mu)
+        function X=sub(X, mu)
             X = bsxfun(@minus, X, mu); % faster than repmat.
         end
         
