@@ -15,7 +15,7 @@ def readWords(filename):  # read the Word format from a CSV (word, frequency, fe
             words.append(row[0])
             freq.append(int(row[1]))
             features.append(np.array(row[2:]).astype(np.float))  # skip frequency
-            i = i + 1
+            i += 1
         X = Words()
         X.words = np.array(words)
         X.freq = np.array(freq)
@@ -48,17 +48,19 @@ def getMatchingFilename(options, X, Y):
     return filename
 
 
-def writeMatching(options, X, Y, pi):  # writes a matching pi to a csv file.
+def writeMatching(options, X, Y, pi, edge_cost):  # writes a matching pi to a csv file.
     filename = getMatchingFilename(options, X, Y)
     with open(filename, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(pi)
+        writer.writerow(edge_cost)
 
 
 def readMatching(options, X, Y):  # reads a matching from a csv file.
     filename = getMatchingFilename(options, X, Y)
     with open(filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-        for row in reader:
-            pi = [int(i) for i in np.array(row)]
-    return pi
+        rows = [row for row in reader]
+        pi = [int(i) for i in np.array(rows[0])]
+        edge_cost = [float(i) for i in np.array(rows[1])]
+    return pi, edge_cost

@@ -9,6 +9,7 @@ import strings
 class Words:
     pass
 
+
 class Options:
     pass
 
@@ -24,6 +25,10 @@ def normalize_rows(V): # assumes V is a numpy array!
     return V
 
 
+def normsqr_rows(V):
+    return (V*V).sum(1)
+
+
 def norm_rows(V):
-    Z = np.sqrt((V*V).sum(1))
+    Z = np.sqrt(normsqr_rows(V))
     return Z
