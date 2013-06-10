@@ -16,6 +16,7 @@ def hamming(p, q):
             s += 1
     return s
 
+
 def sort(V):
     N = len(V)
     Z = zip(V, np.arange(N))
@@ -23,9 +24,11 @@ def sort(V):
     U, I = zip(*Z)
     return np.array(U), np.array(I)
 
+
 def permuteList(v, pi):
     v = [v[i] for i in pi]
     return v
+
 
 def randperm(list):
     list = np.random.permutation(list)
