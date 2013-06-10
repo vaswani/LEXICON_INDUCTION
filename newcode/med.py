@@ -8,7 +8,7 @@ def med(X, Y): # match edit distance
     (cost, pi, edge_cost) = MU.ApproxMatch(D)
     # TODO:
     # 3. set up an initial matching based on edit distance.
-    return pi
+    return (cost, pi, edge_cost)
 
 if __name__ == '__main__':
     # load data
@@ -17,10 +17,10 @@ if __name__ == '__main__':
     X = IO.readWords(fileX)
     Y = IO.readWords(fileY)
 
-    pi = med(X.words, Y.words)
+    (cost, pi, edge_cost) = med(X.words, Y.words)
     matching = MU.getMatching(X.words, Y.words, pi)
 
     options = Options()
     options.exp_id = -1
 
-    IO.writeMatching(options, X.words, Y.words, pi)
+    IO.writeMatching(options, X.words, Y.words, pi, edge_cost)

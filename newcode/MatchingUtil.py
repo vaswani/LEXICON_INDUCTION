@@ -7,6 +7,10 @@ def getMatching(X, Y, pi):
     return np.vstack((X, Y[pi]))
 
 
+def permuteWords(X, pi)
+    X.words = X.words[]
+
+
 # Approximate minimum weighted matching on the input C
 # returns the cost = \sum C[ i, pi[i] ]
 def ApproxMatch(C):
