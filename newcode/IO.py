@@ -1,5 +1,6 @@
 from common import *
 import hashlib
+import MatchingUtil as MU
 
 
 def readWords(filename):  # read the Word format from a CSV (word, frequency, feature1 ... featureD)
@@ -50,17 +51,38 @@ def getMatchingFilename(options, X, Y):
 
 def writeMatching(options, X, Y, pi, edge_cost):  # writes a matching pi to a csv file.
     filename = getMatchingFilename(options, X, Y)
+    print 'writing matching into file ', filename
     with open(filename, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(pi)
         writer.writerow(edge_cost)
+        matching = MU.getMatching(X, Y, pi, edge_cost)
+        writer.writerow(matching[0, :])
+        writer.writerow(matching[1, :])
+
 
 
 def readMatching(options, X, Y):  # reads a matching from a csv file.
     filename = getMatchingFilename(options, X, Y)
+    print 'reading matching file', filename
     with open(filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         rows = [row for row in reader]
         pi = [int(i) for i in np.array(rows[0])]
         edge_cost = [float(i) for i in np.array(rows[1])]
     return pi, edge_cost
+
+
+def getEditDistFilename(X, Y):
+    h = getHash(X, Y)
+    filename = 'cache/edit_dist=' + h + '.npy'
+    return filename
+
+
+def readNumpyArray(filename):
+    return np.load(filename)
+
+
+def writeNumpyArray(filename, D):
+    np.save(filename, D)
+

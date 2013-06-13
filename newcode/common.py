@@ -14,9 +14,13 @@ class Options:
     pass
 
 
-def randn(N, D):
-    A = np.random.randn(N, D)
+def randn(S):
+    A = np.random.randn(*S)
     return A
+
+
+def randi(N, S):
+    return np.random.randint(N, size=S)
 
 
 def normalize_rows(V): # assumes V is a numpy array!

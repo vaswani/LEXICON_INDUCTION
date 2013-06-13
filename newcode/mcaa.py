@@ -8,9 +8,8 @@ def find_matching(options, X, Y):
 
 def setupFeatures(options, X):
     (N,D) = X.features.shape
-    seedlen = options.seed_start;
     (freq, I) = perm.sort(X.freq)
-    I = I[:seedlen-1]
+    I = I[:options.max_words]
     X.features = X.features[I, :]
     X.words = X.words[I]
     logFr = np.log(X.freq)
@@ -26,8 +25,10 @@ def mcca(X, Y, options):
 
     edit_dist_options = Options();
     edit_dist_options.exp_id = -1;
-    (pi, edge_cost) = IO.readMatching(edit_dist_options, X.words, Y.words)
+    (ed_pi, ed_edge_cost) = IO.readMatching(edit_dist_options, X.words, Y.words)
     # TODO: continue from this point
+    # you need to setup the initial matching according to ed_pi
+
     return (pi, edge_cost)
 
 if __name__ == '__main__':
@@ -41,7 +42,8 @@ if __name__ == '__main__':
     options = Options()
     options.exp_id = 1000
     options.seed_start = 100
+    options.max_words = 2000;
     options.weight_type = 'inner'
 
-    mcca(X, Y, options)
+    (pi, edge_cost) = mcca(X, Y, options)
 

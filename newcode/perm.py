@@ -17,11 +17,14 @@ def hamming(p, q):
     return s
 
 
-def sort(V):
+def sort(V, reverse=False):
     N = len(V)
     Z = zip(V, np.arange(N))
     Z.sort()
     U, I = zip(*Z)
+    if reverse:
+        I = I[::-1]
+        U = U[::-1]
     return np.array(U), np.array(I)
 
 
@@ -45,6 +48,15 @@ def uniq(seq):
     seen = set()
     seen_add = seen.add
     return [ x for x in seq if x not in seen and not seen_add(x)]
+
+
+if __name__ == '__main__':
+    I = [3, 4, 2, 5, 1];
+    (U, J) = sort(I)
+    (Urev,I ) = sort(I, reverse=True)
+    print U
+    print Urev
+
 
 
 
