@@ -123,15 +123,15 @@ public class ProbCCAModel implements PairModel {
       this.Cxy = Cxy;
       this.Cyy = Cyy;
     }
-
+    // Bx = (1-tau)*Cxx + tau*I
+    // By = (1-tau)*Cyy + tau*I
     Matrix Bx = Cxx.times(1-options.tau).plus(Matrix.identity(Dx,Dx).times(options.tau));
     Matrix By = Cyy.times(1-options.tau).plus(Matrix.identity(Dy,Dy).times(options.tau));
 
-    //MatrixUtils.logMatrix("Bx", Bx);
-    //MatrixUtils.logMatrix("By", By);
-
+    // BC = By\Cyx
+    // E = (Bx\Cxy)*By\Cyx  ~ (Cxx \ Cxy) * (Cyy\Cyx) which is similar to (3.4) in Hardoon's paper
     Matrix BC = By.inverse().times(Cyx);
-    Matrix E = Bx.inverse().times(Cxy).times(BC);
+    Matrix E  = Bx.inverse().times(Cxy).times(BC);
 
     EigenvalueDecomposition eig = E.eig();
     double[] eigenvalues = eig.getRealEigenvalues();
