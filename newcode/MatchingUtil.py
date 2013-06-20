@@ -7,17 +7,20 @@ import kernels
 def getMatching(X, Y, pi, edge_cost):
     M = np.vstack((X, Y[pi]))
     sigma = np.argsort(edge_cost)
-    M = M[: ,sigma]
+    M = M[:, sigma]
     return M
 
 
-def makeWeights(options, X, Y, GX, GY):
+def makeWeights(options, X, Y, GX=None, GY=None):
     X = np.mat(X)
     Y = np.mat(Y)
+    if GX is None or GY is None:
+        GX = [0]
+        GY = [0]
     GX = np.mat(GX)
     GY = np.mat(GY)
     if options.weight_type == 'inner':
-        U = X*Y.T
+        U = X*Y.T  # linear kernel
         W = U
         for m in range(1, options.M+1):
             W += (options.alpha ** m) * ((GX ** m) * U * (GY.T ** m))
@@ -27,6 +30,8 @@ def makeWeights(options, X, Y, GX, GY):
         W = U
         for m in range(1, options.M+1):
             W += (options.alpha ** m) * kernels.dist((GX ** m) * X, (GY ** m) * Y)
+    else:
+        W = []
     return W
 
 
@@ -41,8 +46,8 @@ def ApproxMatch(C):
     I = I.flatten()
     J = J.flatten()
     sigma = np.argsort(C.flatten())
-    pi = [0] * N
-    edge_cost = [0.0] * N
+    pi = np.zeros(N, dtype=np.int)
+    edge_cost = np.zeros(N)
 
     for element in sigma.flat:
         i = I[element]
@@ -53,7 +58,28 @@ def ApproxMatch(C):
             left[i] = 1
             right[j] = 1
     cost = np.sum(edge_cost)
+
     return cost, pi, edge_cost
+
+
+# this method permutes all the fields of X according to pi.
+# if pi is shorter than X.words, than only the first entries are permuted,
+# and the last remain in their position.
+def permuteFirstWords(X, pi):
+    id = perm.ID(len(pi))
+    X.words[id] = X.words[pi]
+    X.features[id, :] = X.features[pi, :]
+    X.freq[id] = X.freq[pi]
+    #X.G[id,id] = X.G[pi, pi]
+    return X
+
+
+def printMatching(X, Y, sorted_edge_cost):
+    N = len(sorted_edge_cost)
+    for n in xrange(N):
+        weight = sorted_edge_cost[n]
+        print '{:>12} {:>12} {:>12} {:>6}'.format(n, X.words[n], Y.words[n], weight)
+        #print n, X.words[n], Y.words[n], weight
 
 if __name__ == '__main__':  # test
     # test

@@ -1,5 +1,4 @@
 from common import *
-import scipy.spatial.distance
 
 
 def inner(X, Y):
@@ -10,10 +9,6 @@ def inner(X, Y):
 def dist2(X, Y):
     A = dist(X, Y)
     return A * A
-
-
-def dist(X, Y):
-    return scipy.spatial.distance.cdist(X, Y)
 
 
 if __name__ == '__main__':

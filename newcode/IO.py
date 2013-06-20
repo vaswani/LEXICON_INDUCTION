@@ -5,23 +5,23 @@ import MatchingUtil as MU
 
 def readWords(filename):  # read the Word format from a CSV (word, frequency, feature1 ... featureD)
     print 'reading:', filename
+    i = 0
+    words = []
+    freq = []
+    features = []
     with open(filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-        i = 0
-        words = []
-        freq = []
-        features = []
         for row in reader:
             #print row
             words.append(row[0])
             freq.append(int(row[1]))
             features.append(np.array(row[2:]).astype(np.float))  # skip frequency
             i += 1
-        X = Words()
-        X.words = np.array(words)
-        X.freq = np.array(freq)
-        X.features = np.array(features)
-        return X
+    X = Words()
+    X.words = np.array(words)
+    X.freq = np.array(freq)
+    X.features = np.array(features)
+    return X
 
 
 # write X into filename in the following format
@@ -33,8 +33,8 @@ def writeWords(filename, X):
     with open(filename, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for i in xrange(N):
-            writer.writerow([str(X.words[i]),0] + [j for j in features[i,:]])
-    print 'saved ', filename
+            writer.writerow([str(X.words[i]),X.freq[i]] + [j for j in features[i, :]])
+    print 'saved:', filename
 
 
 def getHash(X, Y):
@@ -61,7 +61,6 @@ def writeMatching(options, X, Y, pi, edge_cost):  # writes a matching pi to a cs
         writer.writerow(matching[1, :])
 
 
-
 def readMatching(options, X, Y):  # reads a matching from a csv file.
     filename = getMatchingFilename(options, X, Y)
     print 'reading matching file', filename
@@ -70,6 +69,8 @@ def readMatching(options, X, Y):  # reads a matching from a csv file.
         rows = [row for row in reader]
         pi = [int(i) for i in np.array(rows[0])]
         edge_cost = [float(i) for i in np.array(rows[1])]
+    pi = np.array(pi)
+    edge_cost = np.array(edge_cost)
     return pi, edge_cost
 
 
@@ -85,4 +86,17 @@ def readNumpyArray(filename):
 
 def writeNumpyArray(filename, D):
     np.save(filename, D)
+
+
+def readSeed(filename):
+    wordsX = []
+    wordsY = []
+    with open(filename, 'rb') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for row in reader:
+            #print row
+            wordsX.append(row[0])
+            wordsY.append(row[1])
+    return wordsX, wordsY
+
 

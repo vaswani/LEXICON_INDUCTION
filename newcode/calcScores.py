@@ -15,7 +15,7 @@ def filterDictionary(dictionary, source_words, target_words):
         for matched_target_word in dictionary[source_word]:
             if matched_target_word in target_words:
                filtered_dictionary[source_word][matched_target_word] = 1
-               total_items +=1
+               total_items += 1
     return filtered_dictionary,total_items
 
 

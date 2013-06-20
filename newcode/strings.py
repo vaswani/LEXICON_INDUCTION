@@ -14,7 +14,8 @@ def pweditdist(X, Y):  # computes the pairwise edit-distance between lists of wo
     for i, x in enumerate(X):
         for j, y in enumerate(Y):
             D[i, j] = levenshtein(x, y)
-        print i
+        if i%10==0:
+            print i
     return D
 
 
