@@ -19,6 +19,16 @@ class Words:
         self.freq = np.array(self.freq)
         self.features = np.array(self.features)
 
+    @staticmethod
+    def concat(A, B):
+        C = Words()
+        C.words = np.append(A.words, B.words)
+        C.freq =  np.append(A.freq, B.freq)
+        C.features = np.vstack((A.features, B.features))
+        print C.features.shape
+        return C
+
+
 
 class Options:
     pass
