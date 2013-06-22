@@ -56,25 +56,15 @@ def find_matching(options, X, Y):
 
     # either we reached the maximum number of iterations, or a fixed point
 
-    print 'Stopped after, ', t, 'iterations. Fixed point=', fixed_point
+    print 'Stopped after, ', t, 'iterations. Fixed point =', fixed_point
+    if options.is_mock:
+        print 'Hamming distance:', perm.hamming(X.words, Y.words)
 
     return X, Y, sigma, cost
 
 
-def setupFeatures(options, X):
-    #logFr = np.log(X.freq)
-    L = strings.strlen(X.words)
-    X.features = normalize_rows(X.features)
-    # TODO: should be add logFr and L ?
-    return X
-
-
 def mcca(wordsX, wordsY, seedsX, seedsY, options):
     # (N, D) = wordsX.features.shape
-    seedsX = setupFeatures(options, seedsX)
-    seedsY = setupFeatures(options, seedsY)
-    wordsX = setupFeatures(options, wordsX)
-    wordsY = setupFeatures(options, wordsY)
 
     # NOTE: this code was used when initializing the seed by the edit-distance permutation.
     # edit_dist_options = Options()
@@ -96,7 +86,10 @@ def mcca(wordsX, wordsY, seedsX, seedsY, options):
     # wordsY = MU.permuteFirstWords(wordsY, J)
 
     concatX = Words.concat(wordsX, seedsX)
+    concatX.setupFeatures()
+
     concatY = Words.concat(wordsY, seedsY)
+    concatY.setupFeatures()
 
     (newX, newY, sigma, cost) = find_matching(options, concatX, concatY)
     return newX, newY, sigma, cost
@@ -137,20 +130,20 @@ def readInput():
     else:
         print NSx, 'seed words loaded.'
 
-    # permute Y if rand_seed > 1, (this is used when testing on synthetic data)
+    # permute Y if rand_seed > 1, (this should only be used when testing on mock data)
     if rand_seed > 1:
-        print 'here'
         pi = perm.randperm(xrange(Ny))
         wordsY = MU.permuteFirstWords(wordsY, pi)
     MU.printMatching(wordsX, wordsY, perm.ID(Ny))
 
     # set params
     options = Options()
+    options.is_mock = 'mock' in seedsFilenameX  # mock experiments should have mock in the filename
     options.exp_id = 1000
     options.seed_start = NSx
     options.step_size = 10
     options.tau = 0.001
-    options.T = 1
+    options.T = 10
     options.M = 0  # 0 = no graphs
     options.weight_type = 'inner'
     return wordsX, wordsY, seedsX, seedsY, options

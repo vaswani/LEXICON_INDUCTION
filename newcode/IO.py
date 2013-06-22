@@ -28,13 +28,13 @@ def readWords(filename):  # read the Word format from a CSV (word, frequency, fe
 # (word,frequency,features)
 # since no frequency is given, just use 0
 def writeWords(filename, X):
-    (N,D) = X.features.shape
+    (N, D) = X.features.shape
     features = np.asarray(X.features)
     with open(filename, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for i in xrange(N):
             writer.writerow([str(X.words[i]),X.freq[i]] + [j for j in features[i, :]])
-    print 'saved:', filename
+    print 'saved words:', filename
 
 
 def getHash(X, Y):
@@ -86,6 +86,15 @@ def readNumpyArray(filename):
 
 def writeNumpyArray(filename, D):
     np.save(filename, D)
+
+
+def writeSeed(filename, seed):
+    with open(filename, 'wb') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for (i, v) in enumerate(seed):
+            writer.writerow(v)
+    print 'saved seed:', filename
+
 
 
 def readSeed(filename):

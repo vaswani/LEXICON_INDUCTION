@@ -19,13 +19,19 @@ class Words:
         self.freq = np.array(self.freq)
         self.features = np.array(self.features)
 
+    def setupFeatures(self):
+        #logFr = np.log(X.freq)
+        L = strings.strlen(self.words)
+        self.features = normalize_rows(self.features)
+        # TODO: should be add logFr and L ?
+
+
     @staticmethod
     def concat(A, B):
         C = Words()
         C.words = np.append(A.words, B.words)
         C.freq =  np.append(A.freq, B.freq)
         C.features = np.vstack((A.features, B.features))
-        print C.features.shape
         return C
 
 
@@ -92,25 +98,6 @@ def dist(X, Y):
     return scipy.spatial.distance.cdist(X, Y)
 
 
-def knngraph(X, k):
-    (N, D) = X.shape
-    sqd, idx = knn_search(X, X, k)
-    G = np.zeros((N, N))
-    for j in xrange(0, k):
-        Ij = idx[:, j]
-        G[xrange(N), Ij] = 1  #sqd[:, j]
-
-    return G, idx
-
-
 np.set_printoptions(precision=2)
-if __name__ == '__main__':
-    A = np.array([[0, 0, 0, 0, 0], [0, 0, 0.5, 0, 0], [0, 0, 0, 0.5, 0], [1, 0.5, 0.5, 0, 0]])
-    B = [[0, 0, 1, 0, 0], [0, 1, 0, 0, 0], [1, 1, 0, 0, 0]]
-    idx = knn_search(B, A, 3)
-
-    (G, idx) = knngraph(A, 2)
-
-    print G
 
 
