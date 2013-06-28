@@ -1,5 +1,6 @@
 from common import *
 import editdist  # please import the edit distance code available at https://code.google.com/p/py-editdist/
+import numpy as np
 
 
 def strlen(a): # given an array of strings, returns an array of string lengths

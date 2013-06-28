@@ -11,19 +11,21 @@ def getMatching(X, Y, pi, edge_cost):
     return M
 
 
-def makeWeights(options, X, Y, GX=None, GY=None):
+def makeWeights(options, X, Y, GX, GY):
     X = np.mat(X)
     Y = np.mat(Y)
-    if GX is None or GY is None:
-        GX = [0]
-        GY = [0]
-    GX = np.mat(GX)
-    GY = np.mat(GY)
+
+    if GX is not None or GY is not None:
+        GX = np.mat(GX)
+        GY = np.mat(GY)
     if options.weight_type == 'inner':
         U = X*Y.T  # linear kernel
-        W = U
-        for m in range(1, options.M+1):
-            W += (options.alpha ** m) * ((GX ** m) * U * (GY.T ** m))
+        #W = U
+        Z = GX * U * GY.T
+        # for m in range(1, options.M+1):
+        #     Z += (options.alpha ** m) * ((GX ** m) * U * (GY.T ** m))
+        # TODO: context: why is the norm of X so small in our case?
+        W = options.alpha*Z + U
         W = np.max(W) - W
     elif options.weight_type == 'dist':
         U = kernels.dist(X, Y)
@@ -32,53 +34,45 @@ def makeWeights(options, X, Y, GX=None, GY=None):
             W += (options.alpha ** m) * kernels.dist((GX ** m) * X, (GY ** m) * Y)
     else:
         W = []
-    return W
+    return W  # , U, Z
 
 
 # Approximate minimum weighted matching on the input C
 # returns the cost = \sum C[ i, pi[i] ]
 def ApproxMatch(C):
     N = C.shape[1]
-    left = np.zeros((N, 1))
-    right = np.zeros((N, 1))
+    left = [0] * N
+    right = [0] * N
     I = np.tile(np.arange(N), [N, 1])
     J = I.T
     I = I.flatten()
     J = J.flatten()
     sigma = np.argsort(C.flatten())
-    pi = np.zeros(N, dtype=np.int)
-    edge_cost = np.zeros(N)
+    #sigma = sigma.flat
+    pi = [0] * N
+    edge_cost = [0] * N
 
     for element in sigma.flat:
+        #element = sigma[m]
         i = I[element]
         j = J[element]
-        if (left[i] == 0) and (right[j] == 0):
+        if left[i] == 0 and right[j] == 0:
             pi[j] = i
             edge_cost[j] = C[j, i]
             left[i] = 1
             right[j] = 1
     cost = np.sum(edge_cost)
-
+    pi = np.array(pi)
+    edge_cost = np.array(edge_cost)
+    #print cost
     return cost, pi, edge_cost
-
-
-# this method permutes all the fields of X according to pi.
-# if pi is shorter than X.words, than only the first entries are permuted,
-# and the last remain in their position.
-def permuteFirstWords(X, pi):
-    id = perm.ID(len(pi))
-    X.words[id] = X.words[pi]
-    X.features[id, :] = X.features[pi, :]
-    X.freq[id] = X.freq[pi]
-    #X.G[id,id] = X.G[pi, pi]
-    return X
 
 
 def printMatching(X, Y, sorted_edge_cost):
     N = len(sorted_edge_cost)
     for n in xrange(N):
         weight = sorted_edge_cost[n]
-        print '{:>12} {:>12} {:>12} {:>6}'.format(n, X.words[n], Y.words[n], weight)
+        log(200, '{:>12} {:>12} {:>12} {:>6}'.format(n, X.words[n], Y.words[n], weight))
         #print n, X.words[n], Y.words[n], weight
 
 if __name__ == '__main__':  # test

@@ -1,11 +1,8 @@
-
-__author__ = 'Tomer'
-
-import IO
+from collections import OrderedDict
 from common import *
 import sys
-import string
-from collections import OrderedDict
+import IO
+import words
 
 
 def filter(X, N):
@@ -20,8 +17,8 @@ def filter(X, N):
 
 def split_seed_words(X, seed_list):
     # split X into seed and words
-    seeds = Words()
-    words = Words()
+    seedsX = words.Words()
+    wordsX = words.Words()
     word2index = OrderedDict()
     # word ==> its row index
     for i, w in enumerate(X.words):
@@ -29,29 +26,29 @@ def split_seed_words(X, seed_list):
 
     for j, seed in enumerate(seed_list):
         [i, _] = word2index[seed]
-        seeds.words.append(seed)
-        seeds.freq.append(X.freq[i])
-        seeds.features.append(X.features[i, :])
+        seedsX.words.append(seed)
+        seedsX.freq.append(X.freq[i])
+        seedsX.features.append(X.features[i, :])
         word2index[seed] = [i, 0]  # it is removed - mark as seed
 
     for word in word2index:
         [i, v] = word2index[word]
         if v == 1:
-            words.words.append(word)
-            words.freq.append(X.freq[i])
-            words.features.append(X.features[i, :])
+            wordsX.words.append(word)
+            wordsX.freq.append(X.freq[i])
+            wordsX.features.append(X.features[i, :])
 
-    words.toNP()
-    seeds.toNP()
+    wordsX.toNP()
+    seedsX.toNP()
 
-    return seeds, words
+    return seedsX, wordsX
 
 
 def writeWords(filename, seed, words):
-    seed_outname = filename.replace(".", "_seed.")
-    words_outname = filename.replace(".", "_words.")
-    IO.writeWords(seed_outname, seed)
-    IO.writeWords(words_outname, words)
+    filename_seed = filename.replace(".", "_seed.")
+    filename_words = filename.replace(".", "_words.")
+    IO.writeWords(filename_seed, seed)
+    IO.writeWords(filename_words, words)
 
 
 if __name__ == '__main__':

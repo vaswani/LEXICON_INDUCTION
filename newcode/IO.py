@@ -1,10 +1,8 @@
 from common import *
-import hashlib
-import MatchingUtil as MU
-
+from words import *
 
 def readWords(filename):  # read the Word format from a CSV (word, frequency, feature1 ... featureD)
-    print 'reading:', filename
+    log(50, 'reading:', filename)
     i = 0
     words = []
     freq = []
@@ -34,7 +32,7 @@ def writeWords(filename, X):
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for i in xrange(N):
             writer.writerow([str(X.words[i]),X.freq[i]] + [j for j in features[i, :]])
-    print 'saved words:', filename
+    print 'saved NxD', (N, D), 'words in:\t', filename
 
 
 def getHash(X, Y):
@@ -85,6 +83,7 @@ def readNumpyArray(filename):
 
 
 def writeNumpyArray(filename, D):
+    print 'Saved array in:', filename
     np.save(filename, D)
 
 
@@ -93,8 +92,7 @@ def writeSeed(filename, seed):
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for (i, v) in enumerate(seed):
             writer.writerow(v)
-    print 'saved seed:', filename
-
+    print 'Saved seed:', filename
 
 
 def readSeed(filename):

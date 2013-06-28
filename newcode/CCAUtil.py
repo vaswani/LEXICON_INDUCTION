@@ -7,6 +7,7 @@ def symmetricSqrt(A):
     D, P = scipy.linalg.eigh(A)
     D = np.mat(diag(D))
     P = np.mat(P)
+    assert isPSD(D, 0), 'given matrix is not PSD'
 
     return P * np.sqrt(D) * P.T
 

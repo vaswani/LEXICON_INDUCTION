@@ -1,39 +1,11 @@
 __author__ = 'Tomer'
+import matplotlib.pylab as pl
+import scipy.spatial.distance
 import numpy as np
+import strings
+import perm
 import csv
 import sys
-import perm
-import strings
-import scipy.spatial.distance
-
-
-# Utility classes
-class Words:
-    def __init__(self):
-        self.words = []
-        self.freq = []
-        self.features = []
-
-    def toNP(self):
-        self.words = np.array(self.words)
-        self.freq = np.array(self.freq)
-        self.features = np.array(self.features)
-
-    def setupFeatures(self):
-        #logFr = np.log(X.freq)
-        L = strings.strlen(self.words)
-        self.features = normalize_rows(self.features)
-        # TODO: should be add logFr and L ?
-
-
-    @staticmethod
-    def concat(A, B):
-        C = Words()
-        C.words = np.append(A.words, B.words)
-        C.freq =  np.append(A.freq, B.freq)
-        C.features = np.vstack((A.features, B.features))
-        return C
-
 
 
 class Options:
@@ -62,8 +34,8 @@ def diag(v, d1=None, d2=None):
     return S
 
 
-def normalize_rows(V): # assumes V is a numpy array!
-    Z = norm_rows(V)
+def normalize_rows(V, p=2):  # assumes V is a numpy array!
+    Z = norm_rows(V, p)
     V = (V.T / Z).T
     return V
 
@@ -72,8 +44,11 @@ def normsqr_rows(V):
     return (V*V).sum(1)
 
 
-def norm_rows(V):
-    Z = np.sqrt(normsqr_rows(V))
+def norm_rows(V, p=2):
+    if p == 2:
+        Z = np.sqrt(normsqr_rows(V))
+    if p == 1:
+        Z = np.sum(V, 1)  # sum across the columns
     return Z
 
 
@@ -83,10 +58,15 @@ def uniq(seq):  # stable version of unique (stable in the sense that it preserve
     return [x for x in seq if x not in seen and not seen_add(x)]
 
 
+def isPSD(A, tol=1e-8):
+    E, V = scipy.linalg.eigh(A)
+    return np.all(E > -tol)
+
+
 def knn_search(x, D, K):
     """ find K nearest neighbours of data among D """
-    ndata = D.shape[1]
-    K = K if K < ndata else ndata
+    N = D.shape[1]
+    K = K if K < N else N
     # euclidean distances from the other points
     sqd = dist(x, D)
     idx = np.argsort(sqd)  # sorting
@@ -94,10 +74,28 @@ def knn_search(x, D, K):
     return sqd[:,:K], idx[:,:K]
 
 
+def norm(v, p='fro'):
+    return np.linalg.norm(v, p)
+
+
 def dist(X, Y):
     return scipy.spatial.distance.cdist(X, Y)
 
 
+def log(level, *args):
+    global verbosity
+    if verbosity > level:
+        for i, s in enumerate(args):
+            sys.stdout.write(str(s))
+            sys.stdout.write(' ')
+        sys.stdout.write('\n')
+
+
+if __name__ == '__main__':
+    print '1.233333'
+# general common options
 np.set_printoptions(precision=2)
+print 'here'
+verbosity = 1000
 
 
