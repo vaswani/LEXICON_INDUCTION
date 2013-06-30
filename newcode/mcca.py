@@ -8,10 +8,10 @@ import IO
 
 def find_matching(options, concatX, concatY):
     # finds a permutation pi that best matches Y to X
-    # in optimization procedure works as follows:
+    # The optimization procedure works as follows:
     # suppose there are 2000 words to be matched, 100 seed words and step size is 100
-    # The seed is stored at the end (so, X[pi[i]] matches Y[i] for i > 2000]
-    # at each iteration t we (starting at t=0)
+    # The seed is stored at the end (so, X[i] matches Y[i] for i > 2000] in all iterations
+    # at each iteration t (starting at t=0):
     # 1. compute the CCA on the last 100 + 100*t entries
     # 2. compute the CCA representation of all words
     # 3. perform a matching on the first N=2000 words to get pi_t
@@ -19,7 +19,7 @@ def find_matching(options, concatX, concatY):
 
     # initially, assume that pi is ID
     (N, D) = concatX.features.shape
-    M = N - options.seed_start  # the first M entries can be permuted. The rest are fixed
+    M = N - options.seed_start  # The first M entries can be permuted. The rest are fixed
 
     sigma = Struct()  # holds the cumulative permutations applied on X and Y
     sigma.X = perm.ID(M)
@@ -52,21 +52,19 @@ def find_matching(options, concatX, concatY):
             sigma.X = sigma.X[I]  # accumulate the changes from the ID
             sigma.Y = sigma.Y[pi_t[I]]  # accumulate the changes from the ID TODO: is this correct? (and do we use it?)
             # END OF ITERATION: output Matching
-        print cost, np.sum(Z.X.A * Z.Y.A)
+        print 'cost =', cost, 'latent inner product = ', np.sum(Z.X.A * Z.Y.A)
         WW = MU.makeWeights(options, concatX.features, concatY.features, concatX.G, concatY.G)
-        print 'normWW', np.linalg.norm(WW, 2)
-        print 'norm GX-GY', np.linalg.norm(concatX.G - concatY.G)
+        #print 'norm GX-GY', np.linalg.norm(concatX.G - concatY.G)
         #MU.printMatching(concatX, concatY, sorted_edge_cost)
-        log(100, '----------\n')
+        log(100, '---------- ', 'Completed iteration = ', t, '----------\n')
         if fixed_point:
             break
 
     # either we reached the maximum number of iterations, or a fixed point
 
-    log(100,'Stopped after, ', t, 'iterations. Fixed point =', fixed_point)
+    log(100, 'Stopped after, ', t, 'iterations. Fixed point =', fixed_point)
     if options.is_mock:
         log('Hamming distance:', perm.hamming(concatX.words, concatY.words))
-
     return concatX, concatY, sigma, sorted_edge_cost, cost
 
 
@@ -80,11 +78,8 @@ def mcca(options, wordsX, wordsY, seedsX, seedsY, GX=None, GY=None):
     concatY.setupFeatures()
     concatY.G = GY
 
-    print np.linalg.norm(concatX.G-concatY.G)
-
-
     (newX, newY, sigma, edge_cost, cost) = find_matching(options, concatX, concatY)
-    print "done"
+    print "mcca is Done."
     return newX, newY, sigma, edge_cost, cost
 
 

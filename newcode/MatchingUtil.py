@@ -21,17 +21,23 @@ def makeWeights(options, X, Y, GX, GY):
     if options.weight_type == 'inner':
         U = X*Y.T  # linear kernel
         #W = U
-        Z = GX * U * GY.T
+        if options.M == 1:
+            Z = GX * U * GY.T
+            W = options.alpha*Z + (1-options.alpha)*U
+        else:
+            W = U
         # for m in range(1, options.M+1):
         #     Z += (options.alpha ** m) * ((GX ** m) * U * (GY.T ** m))
         # TODO: context: why is the norm of X so small in our case?
-        W = options.alpha*Z + U
         W = np.max(W) - W
     elif options.weight_type == 'dist':
         U = kernels.dist(X, Y)
         W = U
-        for m in range(1, options.M+1):
-            W += (options.alpha ** m) * kernels.dist((GX ** m) * X, (GY ** m) * Y)
+        if options.M == 1:
+            Z = kernels.dist(GX * X, GY * Y)
+            W = options.alpha*Z + (1-options.alpha)*U
+        else:
+            W = U
     else:
         W = []
     return W  # , U, Z

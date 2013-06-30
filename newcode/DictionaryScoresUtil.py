@@ -71,9 +71,10 @@ def outputScores(scores, title):
 
     print 'Final Scores', title, ':'
     print '============='
-    print 'P :', np.array(p)
-    print 'R :', np.array(r)
-    print 'F1:', np.array(f)
+    print 'cutoff:', np.array(cutoff)
+    print 'Prec''  :', np.array(p)
+    print 'Recall:', np.array(r)
+    print 'F1    :', np.array(f)
 
 
 # computes the F1 score

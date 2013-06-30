@@ -91,11 +91,19 @@ def log(level, *args):
         sys.stdout.write('\n')
 
 
+def warn(*args):
+    for i, s in enumerate(args):
+        sys.stdout.write(str(s))
+        sys.stdout.write(' ')
+    sys.stderr.write('\n')
+
+
+
+
 if __name__ == '__main__':
     print '1.233333'
 # general common options
 np.set_printoptions(precision=2)
-print 'here'
 verbosity = 1000
 
 
