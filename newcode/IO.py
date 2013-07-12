@@ -1,8 +1,11 @@
 from common import *
 from words import *
+import cPickle
+import operator
+
 
 def readWords(filename):  # read the Word format from a CSV (word, frequency, feature1 ... featureD)
-    log(50, 'reading:', filename)
+    log(50, 'reading Words:', filename)
     i = 0
     words = []
     freq = []
@@ -19,7 +22,32 @@ def readWords(filename):  # read the Word format from a CSV (word, frequency, fe
     X.words = np.array(words)
     X.freq = np.array(freq)
     X.features = np.array(features)
+    log(50, 'read', len(X.freq), 'words')
+    csvfile.close()
     return X
+
+
+def readPickledWords(filename):
+    obj = unpickle(filename)
+    N = len(obj['freq'])
+    words = [0] * N
+    freq = [0] * N
+    for i, w in enumerate(obj['freq']):
+        f = freq[i]
+        words[i] = w
+        freq[i] = f
+    X = Words()
+    X.words = np.array(words)
+    X.freq = np.array(freq)
+    X.repr = obj['features']  # a dict to dict to count
+    assert set(X.repr.keys()) == set(X.words)
+    return X
+
+
+def writePickledWords(filename, top_nouns, context_features):
+    obj = {'freq': top_nouns, 'features': context_features}
+    print >> sys.stderr, "pickling features to", filename, 'N =', len(top_nouns)
+    pickle(filename, obj)
 
 
 # write X into filename in the following format
@@ -27,12 +55,14 @@ def readWords(filename):  # read the Word format from a CSV (word, frequency, fe
 # since no frequency is given, just use 0
 def writeWords(filename, X):
     (N, D) = X.features.shape
+    log(50, 'writing', N, 'word')
     features = np.asarray(X.features)
     with open(filename, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for i in xrange(N):
             writer.writerow([str(X.words[i]),X.freq[i]] + [j for j in features[i, :]])
-    print 'saved NxD', (N, D), 'words in:\t', filename
+    csvfile.close()
+    print >> sys.stderr, 'saved NxD', (N, D), 'words in:\t', filename
 
 
 def getHash(X, Y):
@@ -49,7 +79,7 @@ def getMatchingFilename(options, X, Y):
 
 def writeMatching(options, X, Y, pi, edge_cost):  # writes a matching pi to a csv file.
     filename = getMatchingFilename(options, X, Y)
-    print 'writing matching into file ', filename
+    print >> sys.stderr, 'writing matching into file ', filename
     with open(filename, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(pi)
@@ -61,7 +91,7 @@ def writeMatching(options, X, Y, pi, edge_cost):  # writes a matching pi to a cs
 
 def readMatching(options, X, Y):  # reads a matching from a csv file.
     filename = getMatchingFilename(options, X, Y)
-    print 'reading matching file', filename
+    print >> sys.stderr,'reading matching file', filename
     with open(filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         rows = [row for row in reader]
@@ -83,7 +113,7 @@ def readNumpyArray(filename):
 
 
 def writeNumpyArray(filename, D):
-    print 'Saved array in:', filename
+    print >> sys.stderr, 'Saved array in:', filename
     np.save(filename, D)
 
 
@@ -92,7 +122,7 @@ def writeSeed(filename, seed):
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for (i, v) in enumerate(seed):
             writer.writerow(v)
-    print 'Saved seed:', filename
+    print >> sys.stderr, 'Saved seed:', filename
 
 
 def readSeed(filename):
@@ -105,5 +135,16 @@ def readSeed(filename):
             wordsX.append(row[0])
             wordsY.append(row[1])
     return wordsX, wordsY
+    
+    
+def pickle(filename, obj):
+    outfile = open(filename, 'wb')
+    cPickle.dump(obj, outfile, protocol=2)
+    outfile.close()
 
 
+def unpickle(filename):
+    infile = open(filename, 'rb')
+    obj = cPickle.load(infile)
+    infile.close()
+    return obj

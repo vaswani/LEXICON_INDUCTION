@@ -1,15 +1,12 @@
 __author__ = 'Tomer'
 import matplotlib.pylab as pl
+from collections import defaultdict
 import scipy.spatial.distance
 import numpy as np
 import strings
 import perm
 import csv
 import sys
-
-
-class Options:
-    pass
 
 
 class Struct:  # general structs
@@ -41,6 +38,8 @@ def normalize_rows(V, p=2):  # assumes V is a numpy array!
 
 
 def normsqr_rows(V):
+    if isinstance(V, np.matrix):
+        V = V.A
     return (V*V).sum(1)
 
 
@@ -86,18 +85,15 @@ def log(level, *args):
     global verbosity
     if verbosity > level:
         for i, s in enumerate(args):
-            sys.stdout.write(str(s))
-            sys.stdout.write(' ')
-        sys.stdout.write('\n')
+            sys.stderr.write(str(s))
+            sys.stderr.write(' ')
+        sys.stderr.write('\n')
 
 
-def warn(*args):
-    for i, s in enumerate(args):
-        sys.stdout.write(str(s))
-        sys.stdout.write(' ')
-    sys.stderr.write('\n')
-
-
+# a module level function, instead of lambda.
+# lambda functions cannot be pickled
+def dd():
+    return defaultdict(int)  
 
 
 if __name__ == '__main__':

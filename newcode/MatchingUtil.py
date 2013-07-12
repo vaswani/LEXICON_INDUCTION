@@ -1,6 +1,7 @@
 __author__ = 'Tomer'
 
 from common import *
+import BilexiconUtil as BU
 import kernels
 
 
@@ -12,6 +13,11 @@ def getMatching(X, Y, pi, edge_cost):
 
 
 def makeWeights(options, X, Y, GX, GY):
+    # hack to compute scores using normalized projections
+    if options.normalize_projections == 1:
+        X = normalize_rows(X)  # note that normalize_rows works on arrays, not matrices.
+        Y = normalize_rows(Y)
+
     X = np.mat(X)
     Y = np.mat(Y)
 
@@ -20,8 +26,7 @@ def makeWeights(options, X, Y, GX, GY):
         GY = np.mat(GY)
     if options.weight_type == 'inner':
         U = X*Y.T  # linear kernel
-        #W = U
-        if options.M == 1:
+        if options.K > 0:  # TODO: add higher order graphs
             Z = GX * U * GY.T
             W = options.alpha*Z + (1-options.alpha)*U
         else:
@@ -32,8 +37,7 @@ def makeWeights(options, X, Y, GX, GY):
         W = np.max(W) - W
     elif options.weight_type == 'dist':
         U = kernels.dist(X, Y)
-        W = U
-        if options.M == 1:
+        if options.K > 0:  # TODO: add higher order graph
             Z = kernels.dist(GX * X, GY * Y)
             W = options.alpha*Z + (1-options.alpha)*U
         else:
@@ -74,12 +78,17 @@ def ApproxMatch(C):
     return cost, pi, edge_cost
 
 
-def printMatching(X, Y, sorted_edge_cost):
+def printMatching(wordsX, wordsY, sorted_edge_cost, lex=None):
     N = len(sorted_edge_cost)
     for n in xrange(N):
         weight = sorted_edge_cost[n]
-        log(200, '{:>12} {:>12} {:>12} {:>6}'.format(n, X.words[n], Y.words[n], weight))
-        #print n, X.words[n], Y.words[n], weight
+        source_word = wordsX[n]
+        target_word = wordsY[n]
+        matched = None
+        if lex is not None:
+            matched = BU.is_valid_match(lex, source_word, target_word)
+        log(200, '{} - {:>12}) {:>12} {:>12} {:>6}'.format(matched, n, source_word, target_word, weight))
+
 
 if __name__ == '__main__':  # test
     # test
@@ -114,7 +123,7 @@ if __name__ == '__main__':  # test
 
     options = Options
     options.weight_type = 'dist'
-    options.M = 1
+    options.K = 1  # K is not really 1 here, but a non-zero value is required.
     options.alpha = 0.3
     W = makeWeights(options, X, Y, GX, GY)
     print 'W shape: ', W.shape

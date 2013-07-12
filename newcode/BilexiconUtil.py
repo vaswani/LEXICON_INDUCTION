@@ -3,19 +3,34 @@ from collections import defaultdict
 from common import *
 
 
+def readLexicon(filename, delimiter='\t'):
+    print >> sys.stderr, 'reading Bilexicon:', filename
+    dict = defaultdict(set)
+    j = 0
+    with open(filename, 'rb') as csvfile:
+        reader = csv.reader(csvfile, delimiter=delimiter, quotechar='|')
+        for row in reader:
+            source_word = row[0].lower()
+            for target_word in row[1:]:
+                dict[source_word].add(target_word.lower())
+            j += 1
+    print >> sys.stderr, 'Done reading Bilexicon'
+    return dict
+
+
 # dictionary contains the list of all matching obtained from the gold lexicon.
 # dictionary has format dict of key, to dict of values
 # source words is a dictionary of source words and target words is a dictionary of target words
-def filterDictionary(dictionary, source_words, target_words):
-    F = defaultdict(dict)
+def filterLexicon(lex, source_words, target_words):
+    F = defaultdict(set)
     total_items = 0
     # keep only pairs (u,w) from dictionary that are both in the source and target lists.
-    for u in dictionary:
+    for u in lex:
         if u not in source_words:
             continue  # u is not among the source words
-        for w in dictionary[u]:
+        for w in lex[u]:
             if w in target_words:
-                F[u][w] = 1
+                F[u].add(w)
                 total_items += 1
     return F, total_items
 
@@ -24,19 +39,23 @@ def filterDictionary(dictionary, source_words, target_words):
 # is another dictionary with the key as the target words
 # matches is a list of lists. Each row in the list has the format
 # [source_word,matched_target_word,score]. The items are sorted according to score
-def getScores(dict, matches, weights):
-    M = len(dict)
+def getScores(lex, source_words, target_words, weights):
+    M = len(lex)
     # sort according to weights (increasing)
-    (_, pi) = perm.sort(weights)
-    matches = matches[pi, :]
-    (N, _) = matches.shape
+    (_, pi) = perm.sort(weights, reverse=False)
+    source_words = source_words[pi]
+    target_words = target_words[pi]
+    N = len(source_words)
+    assert N == len(target_words)
     C = np.zeros((N, 3))  # [1, exists in source, target matches]
-    dict_keys = dict.keys()
-    for i, (source_word, target_word) in enumerate(matches):
+    dict_keys = lex.keys()
+    for i, (source_word) in enumerate(source_words):
+        target_word = target_words[i]
         C[i, 0] = 1  # always 1
         if source_word in dict_keys:
             C[i, 1] = 1  # word exists as a source word
-            if target_word in dict[source_word]:
+            #if target_word in lex[source_word]:
+            if is_valid_match(lex, source_word, target_word):
                 C[i, 2] = 1  # (source, target) words are correctly matched according to dict
 
     C = np.cumsum(C, 0)  # cumulative sum per column
@@ -49,10 +68,14 @@ def getScores(dict, matches, weights):
     return scores  # C should allow computing precision/recall/F1 for any cutoff value.
 
 
+def is_valid_match(lex, source_word, target_word):
+    return target_word in lex[source_word]
+
+
 def outputScores(scores, title):
     np.argwhere(scores.recall)
 
-    cutoff = [0.05, 0.1, 0.25, 1/3, 0.4, 0.5, 0.6]
+    cutoff = [0.05, 0.1, 0.25, 1.0/3, 0.4, 0.5, 0.6]
     p = []
     r = []
     f = []
@@ -113,7 +136,7 @@ if __name__ == '__main__':
     weights = xrange(len(matching)) # just some simple weights
             
     # filter with ground truth.
-    gt, total_items = filterDictionary(B, S, T)
-    scores = getScores(gt, matching, weights)
+    gt, total_items = filterLexicon(B, S, T)
+    scores = getScores(gt, S, T, weights)
 
     outputScores(scores,  'test run')

@@ -1,4 +1,5 @@
 #generates the data from the generative story
+from collections import OrderedDict
 from common import *
 import IO
 import perm
@@ -57,7 +58,23 @@ if __name__ == '__main__':
     (X, Y, pi) = make(N, Nseed, D)
     seed = [(i, i) for i in xrange(Nseed)]
     # write to CSV files
-    IO.writeWords('data/mockX.txt', X)
-    IO.writeWords('data/mockY.txt', Y)
-    IO.writeSeed('data/seedXY.txt', seed)
+    pickled = True
+    if pickled:
+        freqX = OrderedDict()
+        reprX = OrderedDict()
+        for i, w in enumerate(X.words):
+            freqX[w] = X.freq[i]
+            reprX[w] = {j: X.features[i, j] for j in X.features[i, :]}
+
+        IO.writePickledWords('mockX.txt', freqX, reprX)
+        freqY = OrderedDict()
+        reprY = OrderedDict()
+        for i, w in enumerate(X.words):
+            freqY[w] = X.freq[i]
+            reprY[w] = {j: X.features[i, j] for j in Y.features[i, :]}
+        IO.writePickledWords('mockY.txt', freqY, reprY)
+    else:
+        IO.writeWords('mockX.txt', X)
+        IO.writeWords('mockY.txt', Y)
+    IO.writeSeed('seedXY.txt', seed)
     # now need to save

@@ -54,7 +54,7 @@ def project(model, X, Y):
 def projectSingle(X, U,  P, mu):
     # compute latent representation z of each x
     # z = P' U'(x - mu)
-    Z = P.T*U.T*(X - mu).T
+    Z = P.T*U.T*(X - mu).T  # TODO: can make this faster by using P as a vector
     return Z.T
 
 

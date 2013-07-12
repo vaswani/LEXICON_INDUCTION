@@ -1,9 +1,12 @@
 from common import *
 from words import *
 import MatchingUtil as MU
+import BilexiconUtil as BU
 import CCAUtil as CU
 import graphs
 import IO
+
+from optparse import OptionParser
 
 
 def find_matching(options, concatX, concatY):
@@ -18,8 +21,8 @@ def find_matching(options, concatX, concatY):
     # 4. sort the first 2000 matches in descending order.
 
     # initially, assume that pi is ID
-    (N, D) = concatX.features.shape
-    M = N - options.seed_start  # The first M entries can be permuted. The rest are fixed
+    N = len(concatX.words)
+    M = N - options.seed_length  # The first M entries can be permuted. The rest are fixed
 
     sigma = Struct()  # holds the cumulative permutations applied on X and Y
     sigma.X = perm.ID(M)
@@ -28,11 +31,17 @@ def find_matching(options, concatX, concatY):
     for t in range(0, options.T):
         options.t = t
         Nt = M - options.step_size*t
+        # STEP 0: when the feature dimension is high, ICD the seed and project the rest
+        if concatX.isPickled():
+            concatX.ICD_representation(Nt, options.eta)
+            concatY.ICD_representation(Nt, options.eta)
 
         # STEP 1: compute CCA model on the well matched portion of the matching (which includes the fixed seed)
         fixedX = concatX.features[Nt:, :]
         fixedY = concatY.features[Nt:, :]
+        print 'CCA on dimension =', len(fixedX)
         cca_model = CU.learn(fixedX, fixedY, options.tau)
+        print len(cca_model.p), 'correlation coefficients:', cca_model.p
         # STEP 2: compute CCA representation of all samples
         Z = CU.project(cca_model, concatX.features, concatY.features)
         # STEP 3: compute weight matrix and run matching (approximate) algorithm
@@ -53,10 +62,13 @@ def find_matching(options, concatX, concatY):
             sigma.Y = sigma.Y[pi_t[I]]  # accumulate the changes from the ID TODO: is this correct? (and do we use it?)
             # END OF ITERATION: output Matching
         print 'cost =', cost, 'latent inner product = ', np.sum(Z.X.A * Z.Y.A)
-        WW = MU.makeWeights(options, concatX.features, concatY.features, concatX.G, concatY.G)
-        #print 'norm GX-GY', np.linalg.norm(concatX.G - concatY.G)
-        #MU.printMatching(concatX, concatY, sorted_edge_cost)
-        log(100, '---------- ', 'Completed iteration = ', t, '----------\n')
+
+        MU.printMatching(concatX.words[:M], concatY.words[:M], sorted_edge_cost[:M], options.gold_lex)
+        if options.gold_lex is not None:
+            scores = BU.getScores(options.gold_lex, concatX.words[:M], concatY.words[:M], sorted_edge_cost[:M])
+            BU.outputScores(scores, options.title)
+
+        log(100, '---------- ', 'iteration = ', (t+1), '/', options.T, '----------\n')
         if fixed_point:
             break
 
@@ -77,38 +89,27 @@ def mcca(options, wordsX, wordsY, seedsX, seedsY, GX=None, GY=None):
     concatY = Words.concat(wordsY, seedsY)
     concatY.setupFeatures()
     concatY.G = GY
+    
+    options.seed_length = len(seedsX.words)
 
     (newX, newY, sigma, edge_cost, cost) = find_matching(options, concatX, concatY)
     print "mcca is Done."
     return newX, newY, sigma, edge_cost, cost
 
 
-def makeOptions(exp_id, seed_length, graph_type=None, M=0, alpha=0, is_mock=False):
-    # set params
-    options = Options()
-    options.exp_id = exp_id
-    options.is_mock = is_mock  # mock experiments should have mock in the filename
-
-    options.seed_start = seed_length
-    options.step_size = seed_length
-    options.tau = 0.001
-    options.T = 10
-
-    options.weight_type = 'inner'
-    # graph related options
-    options.M = M  # 0 = no graphs
-    options.alpha = alpha
-    options.graph_type = graph_type  # some graphs are dynamic (KNN), some are static.
-
-    return options
-
-
-def readInput(filename_wordsX, filename_wordsY, filename_seedX, filename_seedY, filename_graphX=None, filename_graphY=None):
+def readInput(options, filename_wordsX, filename_wordsY, filename_seedX, filename_seedY, filename_graphX=None, filename_graphY=None):
     # load data files
-    wordsX = IO.readWords(filename_wordsX)
-    wordsY = IO.readWords(filename_wordsY)
-    seedsX = IO.readWords(filename_seedX)
-    seedsY = IO.readWords(filename_seedY)
+    if options.pickled:
+        wordsX = IO.readPickledWords(filename_wordsX)
+        wordsY = IO.readPickledWords(filename_wordsY)
+        seedsX = IO.readPickledWords(filename_seedX)
+        seedsY = IO.readPickledWords(filename_seedY)   	    
+    else:
+        wordsX = IO.readWords(filename_wordsX)
+        wordsY = IO.readWords(filename_wordsY)
+        seedsX = IO.readWords(filename_seedX)
+        seedsY = IO.readWords(filename_seedY)
+    
     # load graphs and make stochastic
     if filename_graphX is not None:
         wordsX.G = IO.readNumpyArray(filename_graphX)
@@ -141,22 +142,72 @@ def readInput(filename_wordsX, filename_wordsY, filename_seedX, filename_seedY, 
         assert NGy0 == Ny + NSy, 'GY dimensions %d do not match those of Y %d' % (NGy0, Ny+NSy)
 
     # permute Y if rand_seed > 1, (this should only be used when testing on mock data)
-    MU.printMatching(wordsX, wordsY, perm.ID(Ny))
+    MU.printMatching(wordsX.words, wordsY.words, perm.ID(Ny))
     return wordsX, wordsY, seedsX, seedsY
 
 
+def parseOptions():
+    # parse cmdline arguments
+    parser = OptionParser()
+    # general setting
+    parser.add_option('-e', '--exp_id', dest='exp_id', type="int", action='store', default=1001)
+    parser.add_option('-l', '--lexicon', dest='filename_lexicon', action='store', default=None)    
+    parser.add_option('-p', '--pickled', dest='pickled', type="int", action='store', default=1)
+    # mcca setting
+    parser.add_option('-z', '--step_size', dest='step_size', type="int", action='store', default=100)
+    parser.add_option('-T', '--iterations', dest='T', type="int", action='store', default=10)
+    parser.add_option('-w', '--weight_type', dest='weight_type', action='store', default='inner')    
+    parser.add_option('-t', '--tau', dest='tau', type="float", action='store', default=0.001)  # CCA regularizer
+    parser.add_option('--eta', dest='eta', type="float", action='store', default=0.001)
+    parser.add_option('--norm_proj', dest='normalize_projections', type="int", action='store', default=1)
+    # graph settings
+    parser.add_option('-K', '--K', dest='K', type="int", action='store', default=0)
+    parser.add_option('-a', '--alpha', dest='alpha', type="float", action='store', default=0)
+    parser.add_option('-g', '--graph_type', dest='graph_type', action='store', default=None)
+    # mock related options
+    parser.add_option('--noise_level', dest='noise_level', type="float", action='store', default=0.0)
+    (options, args) = parser.parse_args()
+    
+    options.is_mock = 'mock' in (sys.argv[1])
+    options.gold_lex = None
+    
+    # post processing of arguments
+    
+    # graph related options
+    if options.graph_type is None:
+        if options.K == 0:
+            options.alpha = 0
+            options.graph_type = None  # some graphs are dynamic (KNN), some are static.
+        else:
+            options.graph_type = 'KNN'
+
+    options.title = "wt={}, K={}, alpha={}".format(options.weight_type, options.K, options.alpha)
+
+    return options
+    
+
 if __name__ == '__main__':
-    # parse arguments
+    # cmd line args
     filename_wordsX = (sys.argv[1])
     filename_wordsY = (sys.argv[2])
     filename_seedsX = (sys.argv[3])
     filename_seedsY = (sys.argv[4])
+    options = parseOptions()
+    # read input files
+    wordsX, wordsY, seedsX, seedsY = readInput(options, filename_wordsX, filename_wordsY, filename_seedsX, filename_seedsY)
 
-    wordsX, wordsY, seedsX, seedsY = readInput(filename_wordsX, filename_wordsY, filename_seedsX, filename_seedsY)
     NSx = len(seedsY.words)
-    is_mock = 'mock' in filename_seedsX
-    options = makeOptions(is_mock, NSx)
 
+    if options.filename_lexicon is not None:
+        lex = BU.readLexicon(options.filename_lexicon)
+        (gold_lex, times) = BU.filterLexicon(lex, wordsX.words, wordsY.words)
+        options.gold_lex = gold_lex
+        print "Gold lexicon contains", len(gold_lex), 'pairs'
+    else:
+        options.gold_lex = None
+        print "no gold lexicon"
+
+    print len(seedsX.words), "seed pairs:", zip(seedsX.words, seedsY.words)
     (wordsX, wordsY, sigma, edge_cost, cost) = mcca(options, wordsX, wordsY, seedsX, seedsY)
     log(0, 'hamming distance:', perm.hamming(wordsX.words, wordsY.words))
 
