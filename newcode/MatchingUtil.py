@@ -3,6 +3,9 @@ __author__ = 'Tomer'
 import common
 import numpy as np
 import BilexiconUtil as BU
+import pyximport
+pyximport.install(setup_args={'include_dirs':[np.get_include()]})
+from cyMatching import cy_ApproxMatch
 
 
 def getMatching(X, Y, pi, edge_cost):
@@ -45,6 +48,12 @@ def makeWeights(options, X, Y, GX, GY):
     else:
         W = []
     return W  # , U, Z
+
+
+def fast_ApproxMatch(C):
+    if isinstance(C, np.matrix):
+        C = np.array(C, dtype=np.double)
+    return cy_ApproxMatch(C)
 
 
 # Approximate minimum weighted matching on the input C
@@ -96,16 +105,24 @@ if __name__ == '__main__':  # test
     # test
     C = np.matrix('1 -1 1 1; 1 1 1 0; 0 1 1 1 ;1 -3 -2 1')
     (cost, pi, edge_cost) = ApproxMatch(C)
+    (cy_cost, cy_pi, cy_edge_cost) = fast_ApproxMatch(C)
     print C
-    print "cost:", cost
-    print pi
-    print edge_cost
+    print "cost:", cost, cy_cost-cost
+    print pi, pi-cy_pi
+    print edge_cost, cy_edge_cost - edge_cost
 
-    D = 1000
+    D = 2000
     np.random.seed(1)
     C = common.randn((D, D))
     import cProfile
-    cProfile.runctx('ApproxMatch(C)', globals(), locals())
+    cProfile.runctx('(cost, pi, edge_cost) = ApproxMatch(C)', globals(), locals())
+    cProfile.runctx('(cy_cost0, cy_pi0, cy_edge_cost0) = cy_ApproxMatch(C)', globals(), locals())
+    #(cost, pi, edge_cost) = ApproxMatch(C)
+    #(cy_cost, cy_pi, cy_edge_cost) = cy_ApproxMatch(C)
+
+    assert np.linalg.norm(cy_cost0-cost) == 0
+    assert np.linalg.norm(pi-cy_pi0) == 0
+    assert np.linalg.norm(cy_edge_cost0 - edge_cost) == 0
 
     X = np.array([[ 0.17034787, -1.11852005,  2.3723583 ],
        [ 0.40587496, -0.71610151,  0.24853477],

@@ -56,7 +56,7 @@ def find_matching(options, concatX, concatY):
 
         # STEP 3: compute weight matrix and run matching (approximate) algorithm
         W = MU.makeWeights(options, Z.X, Z.Y, concatX.G, concatY.G)
-        (cost, pi_t, edge_cost) = MU.ApproxMatch(W[:M, :M])
+        (cost, pi_t, edge_cost) = MU.fast_ApproxMatch(W[:M, :M])
         # STEP 4: sort the words, such that the best matches are at the end.
         # note that pi_t is of length M < N and that
         (sorted_edge_cost, I) = perm.sort(edge_cost, reverse=True)
