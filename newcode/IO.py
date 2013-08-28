@@ -1,28 +1,32 @@
-from common import *
-from words import *
 import cPickle
-import operator
+import common
+import sys
+import csv
+import MatchingUtil as MU
+import numpy as np
+import words
+import scipy.io
 
 
 def readWords(filename):  # read the Word format from a CSV (word, frequency, feature1 ... featureD)
-    log(50, 'reading Words:', filename)
+    common.log(50, 'reading Words:', filename)
     i = 0
-    words = []
+    W = []
     freq = []
     features = []
     with open(filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in reader:
             #print row
-            words.append(row[0])
+            W.append(row[0])
             freq.append(int(row[1]))
             features.append(np.array(row[2:]).astype(np.float))  # skip frequency
             i += 1
-    X = Words()
-    X.words = np.array(words)
+    X = words.Words()
+    X.words = np.array(W)
     X.freq = np.array(freq)
     X.features = np.array(features)
-    log(50, 'read', len(X.freq), 'words')
+    common.log(50, 'read', len(X.freq), 'words')
     csvfile.close()
     return X
 
@@ -30,23 +34,25 @@ def readWords(filename):  # read the Word format from a CSV (word, frequency, fe
 def readPickledWords(filename):
     obj = unpickle(filename)
     N = len(obj['freq'])
-    words = [0] * N
+    D = len(obj['featureNames'])
+    W = [0] * N
     freq = [0] * N
+    common.log(50, 'reading pickled words N =', N, 'D =', D)
     for i, w in enumerate(obj['freq']):
-        f = freq[i]
-        words[i] = w
-        freq[i] = f
-    X = Words()
-    X.words = np.array(words)
+        W[i] = w
+        freq[i] = obj['freq'][w]
+    X = words.Words()
+    X.words = np.array(W)
     X.freq = np.array(freq)
     X.repr = obj['features']  # a dict to dict to count
+    X.featureNames = obj['featureNames']
     assert set(X.repr.keys()) == set(X.words)
     return X
 
 
-def writePickledWords(filename, top_nouns, context_features):
-    obj = {'freq': top_nouns, 'features': context_features}
-    print >> sys.stderr, "pickling features to", filename, 'N =', len(top_nouns)
+def writePickledWords(filename, freq, features, featureNames):
+    obj = {'freq': freq, 'features': features, 'featureNames': featureNames}
+    print >> sys.stderr, "Pickling features to", filename, 'N =', len(freq), 'D =', len(featureNames)
     pickle(filename, obj)
 
 
@@ -55,7 +61,7 @@ def writePickledWords(filename, top_nouns, context_features):
 # since no frequency is given, just use 0
 def writeWords(filename, X):
     (N, D) = X.features.shape
-    log(50, 'writing', N, 'word')
+    common.log(50, 'writing', N, 'word in plaintext')
     features = np.asarray(X.features)
     with open(filename, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -148,3 +154,19 @@ def unpickle(filename):
     obj = cPickle.load(infile)
     infile.close()
     return obj
+
+
+def readPy(filename):
+    with open(filename, 'r') as f:
+        data = f.read()
+    A = eval(data)
+    return A
+
+
+def exportMatlab(filename, varname, A):
+    scipy.io.savemat('/tmp/matrices/' + filename, mdict={varname: A})
+
+
+if __name__ == '__main__':
+    readPickledWords('data/mock/pockX.txt')
+    readWords('data/mock/mockX.txt')

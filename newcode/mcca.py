@@ -1,10 +1,12 @@
 from common import *
-from words import *
 import MatchingUtil as MU
 import BilexiconUtil as BU
 import CCAUtil as CU
+from words import Words
 import graphs
 import IO
+from termcolor import colored
+
 
 from optparse import OptionParser
 
@@ -39,11 +41,19 @@ def find_matching(options, concatX, concatY):
         # STEP 1: compute CCA model on the well matched portion of the matching (which includes the fixed seed)
         fixedX = concatX.features[Nt:, :]
         fixedY = concatY.features[Nt:, :]
-        print 'CCA on dimension =', len(fixedX)
-        cca_model = CU.learn(fixedX, fixedY, options.tau)
-        print len(cca_model.p), 'correlation coefficients:', cca_model.p
+        if options.noise_level > 0:
+            fixedX += options.noise_level*common.randn(fixedX.shape)
+            fixedY += options.noise_level*common.randn(fixedY.shape)
+
+        print colored('CCA dimensions =', 'green'), len(fixedX)
+        cca_model = CU.learn(fixedX, fixedY , options)
+        print len(cca_model.p), 'Top 10 correlation coefficients:', cca_model.p[:10]
         # STEP 2: compute CCA representation of all samples
-        Z = CU.project(cca_model, concatX.features, concatY.features)
+        print 'norms', norm(concatX.features), norm(concatY.features)
+        Z = CU.project(options, cca_model, concatX.features, concatY.features)
+
+        print 'Z', norm(Z.X), norm(Z.Y)
+
         # STEP 3: compute weight matrix and run matching (approximate) algorithm
         W = MU.makeWeights(options, Z.X, Z.Y, concatX.G, concatY.G)
         (cost, pi_t, edge_cost) = MU.ApproxMatch(W[:M, :M])
@@ -89,7 +99,8 @@ def mcca(options, wordsX, wordsY, seedsX, seedsY, GX=None, GY=None):
     concatY = Words.concat(wordsY, seedsY)
     concatY.setupFeatures()
     concatY.G = GY
-    
+
+    print colored("Initial matching hamming distance:", 'yellow'), perm.hamming(wordsX.words, wordsY.words), '/', len(wordsX.words)
     options.seed_length = len(seedsX.words)
 
     (newX, newY, sigma, edge_cost, cost) = find_matching(options, concatX, concatY)
@@ -128,10 +139,12 @@ def readInput(options, filename_wordsX, filename_wordsY, filename_seedX, filenam
 
     NSx = len(seedsX.words)
     NSy = len(seedsY.words)
+
     if NSx != NSy:
         log(0, 'Number of seed words must be the same', NSx, NSy)
     else:
         log(0, NSx, 'seed words loaded.')
+    assert NSx == NSy
 
     if filename_graphX is not None:
         (NGx0, NGx1) = wordsX.G.shape
@@ -142,7 +155,8 @@ def readInput(options, filename_wordsX, filename_wordsY, filename_seedX, filenam
         assert NGy0 == Ny + NSy, 'GY dimensions %d do not match those of Y %d' % (NGy0, Ny+NSy)
 
     # permute Y if rand_seed > 1, (this should only be used when testing on mock data)
-    MU.printMatching(wordsX.words, wordsY.words, perm.ID(Ny))
+    #wordsY.permuteFirstWords(perm.randperm(perm.ID(Ny)))
+    #MU.printMatching(wordsX.words, wordsY.words, perm.ID(Ny))
     return wordsX, wordsY, seedsX, seedsY
 
 
@@ -160,12 +174,15 @@ def parseOptions():
     parser.add_option('-t', '--tau', dest='tau', type="float", action='store', default=0.001)  # CCA regularizer
     parser.add_option('--eta', dest='eta', type="float", action='store', default=0.001)
     parser.add_option('--norm_proj', dest='normalize_projections', type="int", action='store', default=1)
+    parser.add_option('--covar_type', dest='covar_type', type="string", action='store', default=None)
+    parser.add_option('--projection_type', dest='projection_type', type="string", action='store', default=None)
     # graph settings
     parser.add_option('-K', '--K', dest='K', type="int", action='store', default=0)
     parser.add_option('-a', '--alpha', dest='alpha', type="float", action='store', default=0)
     parser.add_option('-g', '--graph_type', dest='graph_type', action='store', default=None)
     # mock related options
     parser.add_option('--noise_level', dest='noise_level', type="float", action='store', default=0.0)
+    parser.add_option('--record', dest='record', type="int", action='store', default=None)
     (options, args) = parser.parse_args()
     
     options.is_mock = 'mock' in (sys.argv[1])
@@ -205,7 +222,7 @@ if __name__ == '__main__':
         print "Gold lexicon contains", len(gold_lex), 'pairs'
     else:
         options.gold_lex = None
-        print "no gold lexicon"
+        print colored("No gold lexicon", 'red')
 
     print len(seedsX.words), "seed pairs:", zip(seedsX.words, seedsY.words)
     (wordsX, wordsY, sigma, edge_cost, cost) = mcca(options, wordsX, wordsY, seedsX, seedsY)

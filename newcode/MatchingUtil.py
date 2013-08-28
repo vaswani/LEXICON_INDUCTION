@@ -1,8 +1,8 @@
 __author__ = 'Tomer'
 
-from common import *
+import common
+import numpy as np
 import BilexiconUtil as BU
-import kernels
 
 
 def getMatching(X, Y, pi, edge_cost):
@@ -14,9 +14,9 @@ def getMatching(X, Y, pi, edge_cost):
 
 def makeWeights(options, X, Y, GX, GY):
     # hack to compute scores using normalized projections
-    if options.normalize_projections == 1:
-        X = normalize_rows(X)  # note that normalize_rows works on arrays, not matrices.
-        Y = normalize_rows(Y)
+    # if options.normalize_projections == 1:
+    #     X = common.normalize_rows(X)  # note that normalize_rows works on arrays, not matrices.
+    #     Y = common.normalize_rows(Y)
 
     X = np.mat(X)
     Y = np.mat(Y)
@@ -36,9 +36,9 @@ def makeWeights(options, X, Y, GX, GY):
         # TODO: context: why is the norm of X so small in our case?
         W = np.max(W) - W
     elif options.weight_type == 'dist':
-        U = kernels.dist(X, Y)
+        U = common.dist(X, Y)
         if options.K > 0:  # TODO: add higher order graph
-            Z = kernels.dist(GX * X, GY * Y)
+            Z = common.dist(GX * X, GY * Y)
             W = options.alpha*Z + (1-options.alpha)*U
         else:
             W = U
@@ -84,10 +84,12 @@ def printMatching(wordsX, wordsY, sorted_edge_cost, lex=None):
         weight = sorted_edge_cost[n]
         source_word = wordsX[n]
         target_word = wordsY[n]
-        matched = None
         if lex is not None:
             matched = BU.is_valid_match(lex, source_word, target_word)
-        log(200, '{} - {:>12}) {:>12} {:>12} {:>6}'.format(matched, n, source_word, target_word, weight))
+            matched = "correct" if matched else "wrong"
+        else:
+            matched = source_word == target_word
+        common.log(200, '{} - {:>12}) {:>12} {:>12} {:>6}'.format(matched, n, source_word, target_word, weight))
 
 
 if __name__ == '__main__':  # test
@@ -98,6 +100,12 @@ if __name__ == '__main__':  # test
     print "cost:", cost
     print pi
     print edge_cost
+
+    D = 1000
+    np.random.seed(1)
+    C = common.randn((D, D))
+    import cProfile
+    cProfile.runctx('ApproxMatch(C)', globals(), locals())
 
     X = np.array([[ 0.17034787, -1.11852005,  2.3723583 ],
        [ 0.40587496, -0.71610151,  0.24853477],
@@ -121,10 +129,24 @@ if __name__ == '__main__':  # test
        [1, 0, 1, 1],
        [0, 0, 0, 1]])
 
-    options = Options
+    options = common.Struct()
     options.weight_type = 'dist'
     options.K = 1  # K is not really 1 here, but a non-zero value is required.
     options.alpha = 0.3
     W = makeWeights(options, X, Y, GX, GY)
     print 'W shape: ', W.shape
     print W
+# output should be
+#  [[ 1 -1  1  1]
+#  [ 1  1  1  0]
+#  [ 0  1  1  1]
+#  [ 1 -3 -2  1]]
+# cost: -2
+# [2 3 0 1]
+# [ 1  0  0 -3]
+# W shape:  (5, 4)
+# [[ 2.9433  3.1083  2.6389  2.6288]
+#  [ 1.8387  1.7247  2.4035  2.226 ]
+#  [ 1.375   2.2009  3.0356  2.6965]
+#  [ 2.6659  1.7213  2.7032  2.7192]
+#  [ 2.0872  1.8698  2.1393  2.3427]]

@@ -1,6 +1,8 @@
 import sys
 import IO
 import BilexiconUtil
+from common import *
+
 
 if __name__ == '__main__':
     filename_wordsX = sys.argv[1]
@@ -15,15 +17,24 @@ if __name__ == '__main__':
         wordsX = IO.readWords(filename_wordsX)
         wordsY = IO.readWords(filename_wordsY)
 
-    lex = BilexiconUtil.readLexicon(filename_lexicon)
-    (gold_lex, times) = BilexiconUtil.filterLexicon(lex, wordsX.words, wordsY.words)
-    print >> sys.stderr, 'Done filtering gold lexicon'
+    if filename_lexicon == 'None':  # we don't have a lexicon. assume identity.
+        log(100, 'Using identity lexicon')
+        lex = None
+        gold_lex = dict()  #
+        for w in wordsX.words:
+            gold_lex[w] = [w]
+        log(100,  gold_lex)
+    else:
+        lex = BilexiconUtil.readLexicon(filename_lexicon)
+        (gold_lex, times) = BilexiconUtil.filterLexicon(lex, wordsX.words, wordsY.words)
+        log(100, 'Done filtering gold lexicon')
+
     seed = []
     used_targets = set()
-    for source_word in wordsX.words:
-        if source_word in gold_lex:
-            translations = gold_lex[source_word]
-            for translation in translations:
+    for source_word in wordsX.words:                      # go over source
+        if source_word in gold_lex:                       # check source in lexicon
+            translations = gold_lex[source_word]          # get translations of source
+            for translation in translations:              # then, append translations for non-translated sources.
                 if translation in wordsY.words and translation not in used_targets:
                     seed.append((source_word, translation))
                     used_targets.add(translation)
@@ -35,7 +46,4 @@ if __name__ == '__main__':
         if len(seed) == Nseed:
             break
 
-    #print seed
-
-
-
+   # print seed

@@ -1,12 +1,10 @@
 __author__ = 'Tomer'
-import matplotlib.pylab as pl
+import sys
 from collections import defaultdict
 import scipy.spatial.distance
 import numpy as np
 import strings
 import perm
-import csv
-import sys
 
 
 class Struct:  # general structs
@@ -81,6 +79,13 @@ def dist(X, Y):
     return scipy.spatial.distance.cdist(X, Y)
 
 
+def isEmpty(X):
+    if isinstance(X, np.ndarray) or isinstance(X, np.matrix):
+        return X.shape[0] == 0
+    if isinstance(X, list):
+        return len(X) == 0
+
+
 def log(level, *args):
     global verbosity
     if verbosity > level:
@@ -88,6 +93,23 @@ def log(level, *args):
             sys.stderr.write(str(s))
             sys.stderr.write(' ')
         sys.stderr.write('\n')
+
+
+#%%%%%%%%%%%% CONTEXT = make two runs of mock the same. make pock work.
+def record_or_compare(name, V, is_record):
+    filename = '/tmp/matrices/roc_' + name
+    if is_record == 1:
+        IO.writeNumpyArray(filename, V)
+    elif is_record == 2:
+        filename += '.npy'
+        U = IO.readNumpyArray(filename)
+        tol = 1e-5
+        if np.allclose(U, V, tol):
+            print "'%s' passed"
+        else:
+            print "'%s' does not match. (tol=%2.2f)" % (name, tol)
+            print U, V, norm(U), norm(V), U.shape, V.shape
+            assert 1==0
 
 
 # a module level function, instead of lambda.
@@ -99,7 +121,7 @@ def dd():
 if __name__ == '__main__':
     print '1.233333'
 # general common options
-np.set_printoptions(precision=2)
+np.set_printoptions(precision=4)
 verbosity = 1000
 
 

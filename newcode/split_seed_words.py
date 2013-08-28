@@ -7,25 +7,18 @@ import words
 import pprint
 
 
-def filter(X, N):
-    (freq, I) = perm.sort(X.freq, reverse=True)
-    I = I[:N]
-    X.features = X.features[I, :]
-    X.words = X.words[I]
-    X.freq = X.freq[I]
-    # filter in the top N words
-    return X
-
-
 def split_seed_words(X, seed_list, pickled):
     # split X into seed and words
     seedsX = words.Words()
     wordsX = words.Words()
+
     word2index = OrderedDict()
+
     # word ==> its row index
     for i, w in enumerate(X.words):
         word2index[w] = [i, 1]  # index in words and 1 if its a non-seed word (see below)
     # arrange seeds in seedsX
+
     for j, seed in enumerate(seed_list):
         [i, _] = word2index[seed]
         seedsX.words.append(seed)
@@ -50,6 +43,8 @@ def split_seed_words(X, seed_list, pickled):
 
     wordsX.toNP()
     seedsX.toNP()
+    seedsX.featureNames = X.featureNames
+    wordsX.featureNames = X.featureNames
 
     return seedsX, wordsX
 
@@ -62,12 +57,13 @@ def writeWords(filename, seeds, words, pickled):
         freq = OrderedDict()
         for i, w in enumerate(seeds.words):
             freq[w] = seeds.freq[i]
-        IO.writePickledWords(filename_seed, freq, seeds.repr)
-        freq = OrderedDict()
-        for i, w in enumerate(seeds.words):
-            freq[w] = seeds.freq[i]
+        IO.writePickledWords(filename_seed, freq, seeds.repr, seeds.featureNames)
+
+        # freq = OrderedDict()
+        # for i, w in enumerate(seeds.words):
+        #     freq[w] = seeds.freq[i]
         freq = {word: words.freq[i] for i, word in enumerate(words.words)}
-        IO.writePickledWords(filename_words, freq, words.repr)
+        IO.writePickledWords(filename_words, freq, words.repr, words.featureNames)
     else:
         IO.writeWords(filename_seed, seeds)
         IO.writeWords(filename_words, words)

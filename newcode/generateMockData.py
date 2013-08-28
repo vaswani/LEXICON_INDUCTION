@@ -49,6 +49,14 @@ def make(N, Nseed, D):
     return X, Y, pi
 
 
+def getFreqRepr(X, D):
+    freqX = OrderedDict()
+    reprX = OrderedDict()
+    for i, w in enumerate(X.words):
+        freqX[w] = X.freq[i]
+        reprX[w] = {j: X.features[i, j] for j in xrange(D)}
+    return freqX, reprX
+
 # read input parameters
 if __name__ == '__main__':
     N = int(sys.argv[1])
@@ -58,23 +66,16 @@ if __name__ == '__main__':
     (X, Y, pi) = make(N, Nseed, D)
     seed = [(i, i) for i in xrange(Nseed)]
     # write to CSV files
-    pickled = True
-    if pickled:
-        freqX = OrderedDict()
-        reprX = OrderedDict()
-        for i, w in enumerate(X.words):
-            freqX[w] = X.freq[i]
-            reprX[w] = {j: X.features[i, j] for j in X.features[i, :]}
 
-        IO.writePickledWords('mockX.txt', freqX, reprX)
-        freqY = OrderedDict()
-        reprY = OrderedDict()
-        for i, w in enumerate(X.words):
-            freqY[w] = X.freq[i]
-            reprY[w] = {j: X.features[i, j] for j in Y.features[i, :]}
-        IO.writePickledWords('mockY.txt', freqY, reprY)
-    else:
-        IO.writeWords('mockX.txt', X)
-        IO.writeWords('mockY.txt', Y)
+    freqX, reprX = getFreqRepr(X, D)
+    freqY, reprY = getFreqRepr(Y, D)
+    IO.writePickledWords('pockX.txt', freqX, reprX)
+    IO.writePickledWords('pockY.txt', freqY, reprY)
+
+    IO.writeWords('mockX.txt', X)
+    IO.writeWords('mockY.txt', Y)
     IO.writeSeed('seedXY.txt', seed)
+    print X.asTuple()
     # now need to save
+
+

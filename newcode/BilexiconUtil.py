@@ -1,6 +1,10 @@
 # computes precision and recall scores
 from collections import defaultdict
-from common import *
+import common
+import sys
+import csv
+import perm
+import numpy as np
 
 
 def readLexicon(filename, delimiter='\t'):
@@ -10,9 +14,10 @@ def readLexicon(filename, delimiter='\t'):
     with open(filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=delimiter, quotechar='|')
         for row in reader:
-            source_word = row[0].lower()
+            source_word = row[0]  # .lower()
             for target_word in row[1:]:
-                dict[source_word].add(target_word.lower())
+                #dict[source_word].add(target_word.lower())
+                dict[source_word].add(target_word)
             j += 1
     print >> sys.stderr, 'Done reading Bilexicon'
     return dict
@@ -59,7 +64,7 @@ def getScores(lex, source_words, target_words, weights):
                 C[i, 2] = 1  # (source, target) words are correctly matched according to dict
 
     C = np.cumsum(C, 0)  # cumulative sum per column
-    scores = Struct()
+    scores = common.Struct()
     scores.M = M
     scores.precision = C[:, 2] / C[:, 1]
     scores.recall = C[:, 2] / M
@@ -80,7 +85,7 @@ def outputScores(scores, title):
     r = []
     f = []
     for i, c in enumerate(cutoff):
-        J = np.argwhere(scores.recall > c)
+        J = np.argwhere(scores.recall >= c)
 
         if len(J) > 0:
             j = J[0]
