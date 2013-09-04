@@ -22,7 +22,7 @@ def readWords(filename):  # read the Word format from a CSV (word, frequency, fe
             freq.append(int(row[1]))
             features.append(np.array(row[2:]).astype(np.float))  # skip frequency
             i += 1
-    X = words.Words()
+    X = words.Words(filename)
     X.words = np.array(W)
     X.freq = np.array(freq)
     X.features = np.array(features)
@@ -41,7 +41,7 @@ def readPickledWords(filename):
     for i, w in enumerate(obj['freq']):
         W[i] = w
         freq[i] = obj['freq'][w]
-    X = words.Words()
+    X = words.Words(filename)
     X.words = np.array(W)
     X.freq = np.array(freq)
     X.repr = obj['features']  # a dict to dict to count

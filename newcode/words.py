@@ -3,16 +3,17 @@ import numpy as np
 import strings
 import graphs
 import copy
-from SparseFeatures import *
 from ICD import ICD
 import perm
 from MatrixStringKeys import MSK
 import DictDict
+import sys
 
 
 # Utility classes
 class Words:
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.words = []
         self.freq = []
         self.features = []
@@ -28,7 +29,7 @@ class Words:
 
     def setupFeatures(self):
         #logFr = np.log(X.freq)
-        L = strings.strlen(self.words)
+        # L = strings.strlen(self.words)
 
         # normalize the features
         if self.isPickled():
@@ -36,14 +37,6 @@ class Words:
             M0.normalize()
             M0.computeKernel()
             self.msk = M0
-
-            # for word in self.words:
-            #     v = SparseFeatures(self.repr[word])  # wrap the dictionary
-            #     if v.norm() == 0:
-            #         print '0 norm for word', word, '?'
-            #         raise Exception('word with 0 co-occurrence')
-            #     v.scale(1 / v.norm())  # scale it (no need to assign since this is done in place)
-            #print >> sys.stderr, 'Computing Orthographic Features'
 
             # M1 = MSK(self.repr, self.words, self.featureNames)
             # M1.computeKernel()
@@ -88,31 +81,15 @@ class Words:
         # step 2: projected all the data based on the model.
         # use_ICD = True
         # if use_ICD:
-        print >> sys.stderr, "computing ICD model."
+        print >> sys.stderr, "Computing ICD model."
         keys = self.words[Nt:]
-        #self.DDK.compute(keys, keys)
-        #G = self.DDK.materialize(keys, keys)
         K = self.msk.materializeKernel(keys, keys)
-        #print 'norm(G-K)', common.norm(K-G, 2)
         model = ICD.ichol_words(K, keys, eta)
-        print >> sys.stderr, "Computing representations"
-        #self.DDK.compute(keys, self.words)
-        #G = self.DDK.materialize(self.words, model.keys)
+        print >> sys.stderr, "Computing Representations"
         K = self.msk.materializeKernel(self.words, model.keys)
-        #print 'norm(G-K)', common.norm(K-G, 2)
         self.features = ICD.getRepresentations_words(model, K)
-        print >> sys.stderr, "Done with ICD."
+        print >> sys.stderr, "Done ICD."
         return model
-        # else:
-        #     for k in self.repr:
-        #         keys = self.repr[k].keys()
-        #         break
-        #
-        #     F = []
-        #     for word in self.words:
-        #         F.append(SparseFeatures(self.repr[word]).asVector(keys))
-        #     self.features = np.array(F)
-        # note that self.features will be sorted (row-wise0 by self.words
 
     def addReprNoise(self, noise):
         for k in self.repr.keys():
@@ -125,7 +102,7 @@ class Words:
 
     @staticmethod
     def concat(A, B):
-        C = Words()
+        C = Words(A.name)  # take the name of A
         C.words = np.append(A.words, B.words)
         C.freq = np.append(A.freq, B.freq)
         C.features = np.vstack((A.features, B.features))

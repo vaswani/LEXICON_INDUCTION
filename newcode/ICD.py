@@ -1,7 +1,6 @@
 import common
 import sys
 import numpy as np
-#from SparseFeatures import *  # Auxiliary class for computing kernels from sparse features representations
 import CCAUtil as CU
 import Lists
 import pyximport
@@ -13,15 +12,17 @@ from cyICD import cy_getRepresentations
 # A static class that implements Hardoon et al.'s  Incomplete Cholesky Decomposition of a kernel,
 # as well as projection of out-of-sample points.
 #
+# Note: There are two implementations, a slow, native python and a fast cython impl'.
+#
 # One possible use case is to find a lower-dimensional representation of the data that preserves inner products.
 # That is, we are given (x1..xN) -  N samples in a high dimensional feature space of dimension D, where D >> N
-# we want to find Z, a new representation of X in a lower dimension K <= N such that
+# we want to find Z, a new representation of X in a lower dimension d <= N such that
 # the linear kernels ZZ' ~= K (for example, the linear kernel K = XX')
 #
-# Furthermore, given an unseen sample x0, we want to compute its new representation z0
+# Furthermore, given an unseen sample x0, we want to be able to compute its new representation z0
 #
 # The first is done using ichol() (model.RT is the new NxK representation), which performs
-# Incomplete Cholesky Decomposition of the kernel (Rte that the kernel can be non-PSD)
+# Incomplete Cholesky Decomposition of the kernel (Note that the kernel can be non-PSD)
 # See Algorithm 2 in the reference below.
 #
 # The second is done with getRepresentations(). See Algorithm 3 in the reference below.
@@ -36,32 +37,26 @@ from cyICD import cy_getRepresentations
 class ICD:
     @staticmethod
     def ichol_words(K, keys, eta):
-        # W is a dict=>dict=>number
-        # keys defines the sample ordering for the kernel (so, the first row of K corresponds o keys[1]
-        # SparseFeatures wraps dict=>numbers as sparse feature vectors (providing functions like inner products)
+
+        # K is a kernel
+        # keys defines the sample ordering for the kernel (so, the first row of K corresponds o keys[0]
+        # eta - threshold for the ichol procedure.
+
+        # DEBUG: IO.writeNumpyArray('K0.txt', K)
         N = len(keys)
-        print >> sys.stderr, keys
-        print >> sys.stderr, "computing kernel for N =", N, "words"
-        #import cProfile
-        ##cProfile.runctx("K_X = SparseFeatures.getKernel(W, keys)", globals(), locals())
-        #K = SparseFeatures.getKernel(W, keys) # computing kernel
-        #print 'norm', common.norm(G-K)
-        print >> sys.stderr, "ichol of", N, "words"
-        #IO.writeNumpyArray('K0.txt', K)
-        model = ICD.fast_ichol(K, eta)
-        #model = ICD.ichol(K, eta)
+        print >> sys.stderr, "ichol of", N, "words", keys[:10], '...'
+        model = ICD.fast_ichol(K, eta)  # model = ICD.ichol(K, eta)
         model.keys = keys
+
+        # This assertion is an invariant of Cholesky Decomposition for PSD matrices, but not for non-PSD K
         R = np.mat(model.R)
         assert common.norm(R.T * R - K) < 1e-5
         return model
 
     @staticmethod
     def ichol(K, eta):
-        #K1 = np.mat(IO.readPy('/tmp/matrices/K' + str(counter) + '.txt'))
-        #K = K1
-        #d = np.round(np.diag(K).copy())
+        #DEBUG: IO.pickle('/tmp/matrices/K' + str(N) + '.txt', K)
         N = len(K)  # shape[0]
-        #IO.pickle('/tmp/matrices/K' + str(N) + '.txt', K)
         d = np.diag(K).copy()
 
         j = 0
@@ -108,26 +103,9 @@ class ICD:
 
     @staticmethod
     def getRepresentations_words(model, K):
-        #K = SparseFeatures.getKernel(W, keys, model.keys)
-        #print 'norm', common.norm(G-K)
+        #DEBUG: G0 = ICD.getRepresentations(model, K), G0 and F0 should be approx equal.
         F0 = ICD.fast_getRepresentations(model, K)
-        #G0 = ICD.getRepresentations(model, K)
-        #asd
-        # F1 = np.zeros(F0.shape)
-        # for i in xrange(l-en(keys)):
-        #     word_i = keys[i]
-        #     F1[i, :] = ICD.getRepn(model, K_X, i)
         return F0
-
-    # @staticmethod
-    # def getRepn(model, K_X, i):
-    #     r = np.zeros(model.D)
-    #     for j in xrange(model.D):
-    #         r[j] = K_X[i, model.perm[j]]
-    #         for jj in xrange(j):
-    #             r[j] -= r[jj] * model.R[jj, model.perm[j]]  # R[jj][perm[j]];
-    #         r[j] /= model.nu[j]
-    #     return r
 
     @staticmethod
     def fast_getRepresentations(model, K):
@@ -149,21 +127,6 @@ class ICD:
                 r[i][j] /= model.nu[j]
 
         return np.mat(r)
-    #
-    # @staticmethod
-    # def getRepresentations_old(model, K_X):
-    #     N = K_X.shape[0]
-    #     D = model.D
-    #     r = np.mat(np.zeros((N, D)))
-    #
-    #     for j in xrange(D):
-    #         p_j = model.perm[j]
-    #         r[:, j] = K_X[:, p_j]
-    #         for jj in xrange(j):
-    #             r[:, j] -= r[:, jj] * model.R[jj][p_j]
-    #         r[:, j] /= model.nu[j]
-    #
-    #     return r
 
 if __name__ == '__main__':
     nargs = len(sys.argv)
