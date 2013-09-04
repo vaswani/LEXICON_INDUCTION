@@ -6,8 +6,8 @@ import copy
 from SparseFeatures import *
 from ICD import ICD
 import perm
-from kernels import DictDictKernel
 from MatrixStringKeys import MSK
+import DictDict
 
 
 # Utility classes
@@ -32,16 +32,35 @@ class Words:
 
         # normalize the features
         if self.isPickled():
-            for word in self.words:
-                v = SparseFeatures(self.repr[word])  # wrap the dictionary
-                if v.norm() == 0:
-                    print '0 norm for word', word, '?'
-                    raise Exception('word with 0 co-occurrence')
-                v.scale(1/v.norm())  # scale it (no need to assign since this is done in place)
-            #self.DDK = DictDictKernel(self.repr)
-            print >> sys.stderr, 'Computing kernel'
-            self.msk = MSK(self.repr, self.words, self.featureNames)
-            self.msk.computeKernel()
+            M0 = MSK(self.repr, self.words, self.featureNames)
+            M0.normalize()
+            M0.computeKernel()
+            self.msk = M0
+
+            # for word in self.words:
+            #     v = SparseFeatures(self.repr[word])  # wrap the dictionary
+            #     if v.norm() == 0:
+            #         print '0 norm for word', word, '?'
+            #         raise Exception('word with 0 co-occurrence')
+            #     v.scale(1 / v.norm())  # scale it (no need to assign since this is done in place)
+            #print >> sys.stderr, 'Computing Orthographic Features'
+
+            # M1 = MSK(self.repr, self.words, self.featureNames)
+            # M1.computeKernel()
+            # print np.linalg.norm(M1.K - M0.K)
+            # asd
+            # orthoDD, orthoFeatures = strings.to_ngram_dictionary(self.words)
+            # mapOrthoFeature = lambda f: "O_" + f
+            # mapContextFeature = lambda f: "C_" + f
+            # allFeatures = [mapContextFeature(f) for f in self.featureNames] + [mapOrthoFeature(f) for f in orthoFeatures]
+            # orthoDD = DictDict.mapInnerKeys(orthoDD, mapOrthoFeature)
+            # contextDD = DictDict.mapInnerKeys(self.repr, mapContextFeature)
+            # print >> sys.stderr, 'Joining with Context Features'
+            # allDD = DictDict.add(contextDD, orthoDD)
+            # print >> sys.stderr, 'Preparing Sparse Features'
+            #self.msk = MSK(self.repr, self.words, self.featureNames)
+            #print >> sys.stderr, 'Computing Kernel'
+            #self.msk.computeKernel()
         else:
             self.features = common.normalize_rows(self.features)
         # TODO: should be add logFr and L ?

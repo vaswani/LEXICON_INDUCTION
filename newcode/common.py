@@ -115,7 +115,7 @@ def record_or_compare(name, V, is_record):
 # a module level function, instead of lambda.
 # lambda functions cannot be pickled
 def dd():
-    return defaultdict(int)  
+    return defaultdict(int)
 
 
 if __name__ == '__main__':

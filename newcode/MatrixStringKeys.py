@@ -1,9 +1,10 @@
 import scipy.sparse as sps
 import numpy as np
 import time
+from sklearn.preprocessing import normalize
 
 
-# given DD - a dictionary of dictionaries, with numeric values,
+# given DD - a dictionary of dictionaries with format DD[string][feature] = numeric value
 # enables computing a linear kernel efficiently, by wrapping scipy's sparse matrix.
 class MSK:
     def __init__(self, DD, strings, features):
@@ -29,6 +30,9 @@ class MSK:
 
     def getFeatures(self):
         return self.M
+
+    def normalize(self, norm='l2'):
+        self.M = normalize(self.M, norm, axis=1)
 
     def computeKernel(self):
         M = self.getFeatures()

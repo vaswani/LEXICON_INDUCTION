@@ -1,6 +1,7 @@
-from common import *
 import editdist  # please import the edit distance code available at https://code.google.com/p/py-editdist/
 import numpy as np
+from collections import Counter
+from collections import OrderedDict
 
 
 def strlen(a): # given an array of strings, returns an array of string lengths
@@ -18,6 +19,31 @@ def pweditdist(X, Y):  # computes the pairwise edit-distance between lists of wo
         if i%10==0:
             print i
     return D
+
+
+def to_ngram_dictionary(strings, MAX_N=3, MIN_N=1, affix=True):
+    DD = OrderedDict()
+    features = Counter()
+    if affix:
+        f_affix = lambda s: "_" + s + "_"
+    else:
+        f_affix = lambda s: s
+
+    for s in strings:
+        grams = [g for g in ngrams(f_affix(s), MAX_N, MIN_N)]
+        DD[s] = Counter(grams)
+        features = features + DD[s]
+
+    features = features.keys()
+    return DD, features
+
+
+## note that this function works for both strings and lists.
+def ngrams(tokens, MAX_N, MIN_N=1):
+    n_tokens = len(tokens)
+    for i in xrange(n_tokens):
+        for j in xrange(i+MIN_N, min(n_tokens, i+MAX_N)+1):
+            yield tokens[i:j]
 
 
 def levenshtein(s1, s2):
@@ -43,48 +69,3 @@ def levenshtein(s1, s2):
 
 if __name__ == '__main__':
     print levenshtein("abcd", "abcef")==2
-
-# def editdist(seq1, seq2):
-#     """Calculate the Damerau-Levenshtein distance between sequences.
-#
-#     This distance is the number of additions, deletions, substitutions,
-#     and transpositions needed to transform the first sequence into the
-#     second. Although generally used with strings, any sequences of
-#     comparable objects will work.
-#
-#     Transpositions are exchanges of *consecutive* characters; all other
-#     operations are self-explanatory.
-#
-#     This implementation is O(N*M) time and O(M) space, for N and M the
-#     lengths of the two sequences.
-#
-#     >>> dameraulevenshtein('ba', 'abc')
-#     2
-#     >>> dameraulevenshtein('fee', 'deed')
-#     2
-#
-#     It works with arbitrary sequences too:
-#     >>> dameraulevenshtein('abcd', ['b', 'a', 'c', 'd', 'e'])
-#     2
-#     """
-#     # codesnippet:D0DE4716-B6E6-4161-9219-2903BF8F547F
-#     # Conceptually, this is based on a len(seq1) + 1 * len(seq2) + 1 matrix.
-#     # However, only the current and two previous rows are needed at once,
-#     # so we only store those.
-#     oneago = None
-#     thisrow = range(1, len(seq2) + 1) + [0]
-#     for x in xrange(len(seq1)):
-#         # Python lists wrap around for negative indices, so put the
-#         # leftmost column at the *end* of the list. This matches with
-#         # the zero-indexed strings and saves extra calculation.
-#         twoago, oneago, thisrow = oneago, thisrow, [0] * len(seq2) + [x + 1]
-#         for y in xrange(len(seq2)):
-#             delcost = oneago[y] + 1
-#             addcost = thisrow[y - 1] + 1
-#             subcost = oneago[y - 1] + (seq1[x] != seq2[y])
-#             thisrow[y] = min(delcost, addcost, subcost)
-#             # This block deals with transpositions
-#             if (x > 0 and y > 0 and seq1[x] == seq2[y - 1]
-#                 and seq1[x-1] == seq2[y] and seq1[x] != seq2[y]):
-#                 thisrow[y] = min(thisrow[y], twoago[y - 2] + 1)
-#     return thisrow[len(seq2) - 1]
