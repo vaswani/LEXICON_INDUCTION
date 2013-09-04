@@ -73,7 +73,7 @@ def find_matching(options, concatX, concatY):
             # END OF ITERATION: output Matching
         print 'cost =', cost, 'latent inner product = ', np.sum(Z.X.A * Z.Y.A)
 
-        MU.printMatching(concatX.words[:M], concatY.words[:M], sorted_edge_cost[:M], options.gold_lex)
+        #MU.printMatching(concatX.words[:M], concatY.words[:M], sorted_edge_cost[:M], options.gold_lex)
         if options.gold_lex is not None:
             scores = BU.getScores(options.gold_lex, concatX.words[:M], concatY.words[:M], sorted_edge_cost[:M])
             BU.outputScores(scores, options.title)

@@ -21,7 +21,7 @@ def pweditdist(X, Y):  # computes the pairwise edit-distance between lists of wo
     return D
 
 
-def to_ngram_dictionary(strings, MAX_N=3, MIN_N=1, affix=True):
+def to_ngram_dictionary(strings, MAX_N=3, MIN_N=1, affix=False):
     DD = OrderedDict()
     features = Counter()
     if affix:
@@ -32,7 +32,7 @@ def to_ngram_dictionary(strings, MAX_N=3, MIN_N=1, affix=True):
     for s in strings:
         grams = [g for g in ngrams(f_affix(s), MAX_N, MIN_N)]
         DD[s] = Counter(grams)
-        features = features + DD[s]
+        features = features + DD[s]  # used to keep all distinct features
 
     features = features.keys()
     return DD, features

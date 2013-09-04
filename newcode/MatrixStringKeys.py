@@ -24,18 +24,21 @@ class MSK:
             v = DD[s]
             for k in v:
                 j = self.features[k]
-                A[i, j] = v[k]
+                A[i, j] = v[k]  # i,j are the string,feature indices, k is the feature index in v
 
         self.M = A
 
-    def getFeatures(self):
-        return self.M
+    def makeLinearKernel(self):
+        return LinearKernel(self.strings, self.M)
 
     def normalize(self, norm='l2'):
         self.M = normalize(self.M, norm, axis=1)
+        return self
 
-    def computeKernel(self):
-        M = self.getFeatures()
+
+class LinearKernel:
+    def __init__(self, strings, M):
+        self.strings = strings
         self.K = (M * M.T).todense()
 
     def materializeKernel(self, strings1=None, strings2=None):

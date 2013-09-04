@@ -80,7 +80,7 @@ def is_valid_match(lex, source_word, target_word):
 def outputScores(scores, title):
     np.argwhere(scores.recall)
 
-    cutoff = [0.05, 0.1, 0.25, 1.0/3, 0.4, 0.5, 0.6]
+    cutoff = [0.1, 0.25, 1.0/3, 0.4, 0.5, 0.65]
     p = []
     r = []
     f = []

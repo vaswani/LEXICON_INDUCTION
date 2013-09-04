@@ -6,7 +6,6 @@ import copy
 from ICD import ICD
 import perm
 from MatrixStringKeys import MSK
-import DictDict
 import sys
 
 
@@ -33,27 +32,18 @@ class Words:
 
         # normalize the features
         if self.isPickled():
-            M0 = MSK(self.repr, self.words, self.featureNames)
-            M0.normalize()
-            M0.computeKernel()
-            self.msk = M0
+            print >> sys.stderr, 'Computing Kernel for', self.name
+            (orthoDD, orthoFeatures) = strings.to_ngram_dictionary(self.words, affix=True)
+            K_ortho = MSK(orthoDD, self.words, orthoFeatures)\
+                .normalize(norm='l2')\
+                .makeLinearKernel()
 
-            # M1 = MSK(self.repr, self.words, self.featureNames)
-            # M1.computeKernel()
-            # print np.linalg.norm(M1.K - M0.K)
-            # asd
-            # orthoDD, orthoFeatures = strings.to_ngram_dictionary(self.words)
-            # mapOrthoFeature = lambda f: "O_" + f
-            # mapContextFeature = lambda f: "C_" + f
-            # allFeatures = [mapContextFeature(f) for f in self.featureNames] + [mapOrthoFeature(f) for f in orthoFeatures]
-            # orthoDD = DictDict.mapInnerKeys(orthoDD, mapOrthoFeature)
-            # contextDD = DictDict.mapInnerKeys(self.repr, mapContextFeature)
-            # print >> sys.stderr, 'Joining with Context Features'
-            # allDD = DictDict.add(contextDD, orthoDD)
-            # print >> sys.stderr, 'Preparing Sparse Features'
-            #self.msk = MSK(self.repr, self.words, self.featureNames)
-            #print >> sys.stderr, 'Computing Kernel'
-            #self.msk.computeKernel()
+            K_context = MSK(self.repr, self.words, self.featureNames)\
+                .normalize(norm='l2')\
+                .makeLinearKernel()
+            assert K_context.strings == K_ortho.strings  # strings should be numbered the same.
+            K_context.K += K_ortho.K
+            self.msk = K_context
         else:
             self.features = common.normalize_rows(self.features)
         # TODO: should be add logFr and L ?
@@ -81,7 +71,7 @@ class Words:
         # step 2: projected all the data based on the model.
         # use_ICD = True
         # if use_ICD:
-        print >> sys.stderr, "Computing ICD model."
+        print >> sys.stderr, "Computing ICD model for",  self.name
         keys = self.words[Nt:]
         K = self.msk.materializeKernel(keys, keys)
         model = ICD.ichol_words(K, keys, eta)
