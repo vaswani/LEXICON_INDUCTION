@@ -1,6 +1,6 @@
 import copy
 from common import *
-import makeGraph
+import words_to_graph
 import graphs
 import mcca
 
@@ -31,8 +31,8 @@ if __name__ == '__main__':
             pi = perm.randperm(xrange(len(wordsY.words)))
             wordsY.permuteFirstWords(pi)
             if options.K > 0:
-                GX = makeGraph.makeGraph(wordsX, seedsX, options.graph_type, options.K)
-                GY = makeGraph.makeGraph(wordsY, seedsY, options.graph_type, options.K)
+                GX = words_to_graph.makeGraph(wordsX, seedsX, options.graph_type, options.K)
+                GY = words_to_graph.makeGraph(wordsY, seedsY, options.graph_type, options.K)
                 GY = graphs.permute(GY, pi)
                 
                 GX = graphs.toSymmetricStochastic(GX)

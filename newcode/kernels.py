@@ -5,14 +5,14 @@ import time
 import perm
 
 
-def inner(X, Y):
-    K = X.dot(Y.T)
-    return K
-
-
-def dist2(X, Y):
-    A = dist(X, Y)
-    return A * A
+# def inner(X, Y):
+#     K = X.dot(Y.T)
+#     return K
+#
+#
+# def dist2(X, Y):
+#     A = dist(X, Y)
+#     return A * A
 
 
 # ## a linear kernel for a dict of dict

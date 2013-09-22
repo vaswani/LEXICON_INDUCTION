@@ -3,8 +3,6 @@ import sys
 from collections import defaultdict
 import scipy.spatial.distance
 import numpy as np
-import strings
-import perm
 
 
 class Struct:  # general structs
@@ -27,6 +25,10 @@ def diag(v, d1=None, d2=None):
     S = np.zeros((d1, d2))
     S[:N, :N] = np.diag(v)
     return S
+
+
+def submatrix(A, rows, cols):  # this is quite slow for some reason, maybe since a new array is allocated.
+    return A[np.ix_(rows, cols)]
 
 
 def normalize_rows(V, p=2):  # assumes V is a numpy array!
@@ -55,28 +57,46 @@ def uniq(seq):  # stable version of unique (stable in the sense that it preserve
     return [x for x in seq if x not in seen and not seen_add(x)]
 
 
-def isPSD(A, tol=1e-8):
-    E, V = scipy.linalg.eigh(A)
-    return np.all(E > -tol)
+def max(v):
+    v = asVector(v)
+    i = np.argmax(v)
+    return v[i], i
 
 
-def knn_search(x, D, K):
-    """ find K nearest neighbours of data among D """
-    N = D.shape[1]
-    K = K if K < N else N
-    # euclidean distances from the other points
-    sqd = dist(x, D)
-    idx = np.argsort(sqd)  # sorting
-    # return the indexes of K nearest neighbours
-    return sqd[:,:K], idx[:,:K]
+def min(v):
+    v = asVector(v)
+    i = np.argmin(v)
+    return v[i], i
+
+
+def asVector(v):
+    v = np.squeeze(np.asarray(v))
+    if len(v.shape) == 0:
+        v = np.array([v]) # scalars have shape 0 (e.g. array(0))
+    assert len(v.shape) == 1
+    return v
+
+
+def sub2ind(dims, X, Y=None, Z=None):
+    X = asVector(X)
+    Y = asVector(Y)
+
+    if Z is None:
+        V = [X, Y]
+    else:
+        Z = asVector(Z)
+        V = [X, Y, Z]
+    return np.ravel_multi_index(V, dims)
 
 
 def norm(v, p='fro'):
     return np.linalg.norm(v, p)
 
 
-def dist(X, Y):
-    return scipy.spatial.distance.cdist(X, Y)
+def dist(X, Y=None, metric='euclidean'):
+    if Y is None:
+        Y = X
+    return scipy.spatial.distance.cdist(X, Y, metric)
 
 
 def isEmpty(X):
@@ -96,20 +116,20 @@ def log(level, *args):
 
 
 #%%%%%%%%%%%% CONTEXT = make two runs of mock the same. make pock work.
-def record_or_compare(name, V, is_record):
-    filename = '/tmp/matrices/roc_' + name
-    if is_record == 1:
-        IO.writeNumpyArray(filename, V)
-    elif is_record == 2:
-        filename += '.npy'
-        U = IO.readNumpyArray(filename)
-        tol = 1e-5
-        if np.allclose(U, V, tol):
-            print "'%s' passed"
-        else:
-            print "'%s' does not match. (tol=%2.2f)" % (name, tol)
-            print U, V, norm(U), norm(V), U.shape, V.shape
-            assert 1==0
+# def record_or_compare(name, V, is_record):
+#     filename = '/tmp/matrices/roc_' + name
+#     if is_record == 1:
+#         IO.writeNumpyArray(filename, V)
+#     elif is_record == 2:
+#         filename += '.npy'
+#         U = IO.readNumpyArray(filename)
+#         tol = 1e-5
+#         if np.allclose(U, V, tol):
+#             print "'%s' passed"
+#         else:
+#             print "'%s' does not match. (tol=%2.2f)" % (name, tol)
+#             print U, V, norm(U), norm(V), U.shape, V.shape
+#             assert 1==0
 
 
 # a module level function, instead of lambda.
@@ -118,8 +138,12 @@ def dd():
     return defaultdict(int)
 
 
+def bell():
+    print('\a')
+
+
 if __name__ == '__main__':
-    print '1.233333'
+    print 'common: 1.233333'
 # general common options
 np.set_printoptions(precision=4)
 verbosity = 1000

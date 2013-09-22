@@ -1,3 +1,4 @@
+from PSD import isPSD
 import common
 import numpy as np
 import scipy.linalg
@@ -8,7 +9,7 @@ def symmetricSqrt(A):
     D, P = scipy.linalg.eigh(A)
     D = np.mat(common.diag(D))
     P = np.mat(P)
-    assert common.isPSD(D, 0), 'given matrix is not PSD'
+    assert isPSD(D, 0), 'given matrix is not PSD'
     return P * np.sqrt(D) * P.T
 
 
@@ -68,28 +69,28 @@ def learn(X, Y, options):
     return model
 
 
-def learn0(X, Y, options=None):
-    # compute the covariance of [X;Y]
-    (Sxx, Sxy, Syy) = computeCorr(X, Y, options.covar_type, options.tau)
-
-    BC = Syy.I * Sxy.T
-    E = Sxx.I * Sxy * BC
-
-    [eigs, V] = np.linalg.eig(E)
-    (eigs, I) = perm.sort(eigs, reverse=True)
-    p = np.sqrt(eigs + 1e-10)
-    V = V[:, I]
-    Ux = V.T
-    Uy = (BC * V * np.diag(1/p)).T
-    model = common.Struct()
-    model.p = p
-    model.Ux = Ux
-    model.Uy = Uy
-    model.P = np.mat(np.diag(p))
-    model.mux = np.mean(X, 0)  # currently unused
-    model.muy = np.mean(Y, 0)
-
-    return model
+# def learn0(X, Y, options=None):
+#     # compute the covariance of [X;Y]
+#     (Sxx, Sxy, Syy) = computeCorr(X, Y, options.covar_type, options.tau)
+#
+#     BC = Syy.I * Sxy.T
+#     E = Sxx.I * Sxy * BC
+#
+#     [eigs, V] = np.linalg.eig(E)
+#     (eigs, I) = perm.sort(eigs, reverse=True)
+#     p = np.sqrt(eigs + 1e-10)
+#     V = V[:, I]
+#     Ux = V.T
+#     Uy = (BC * V * np.diag(1/p)).T
+#     model = common.Struct()
+#     model.p = p
+#     model.Ux = Ux
+#     model.Uy = Uy
+#     model.P = np.mat(np.diag(p))
+#     model.mux = np.mean(X, 0)  # currently unused
+#     model.muy = np.mean(Y, 0)
+#
+#     return model
 
 
 def project(options, model, X, Y):

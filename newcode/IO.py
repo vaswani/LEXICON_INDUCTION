@@ -8,6 +8,16 @@ import words
 import scipy.io
 
 
+def readCSV(filename):
+    lines = []
+    with open(filename, 'rb') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            lines.append(row)
+    return lines
+
+
+
 def readWords(filename):  # read the Word format from a CSV (word, frequency, feature1 ... featureD)
     common.log(50, 'reading Words:', filename)
     i = 0
@@ -35,14 +45,15 @@ def readPickledWords(filename):
     obj = unpickle(filename)
     N = len(obj['freq'])
     D = len(obj['featureNames'])
+    # pre-allocate
     W = [0] * N
     freq = [0] * N
-    common.log(50, 'reading pickled words N =', N, 'D =', D)
+    common.log(50, 'reading pickled words N =', N, 'and D =', D)
     for i, w in enumerate(obj['freq']):
         W[i] = w
         freq[i] = obj['freq'][w]
     X = words.Words(filename)
-    X.words = np.array(W)
+    X.words = W # np.array(W)
     X.freq = np.array(freq)
     X.repr = obj['features']  # a dict to dict to count
     X.featureNames = obj['featureNames']

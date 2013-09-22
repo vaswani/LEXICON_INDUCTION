@@ -10,8 +10,7 @@ class MSK:
     def __init__(self, DD, strings, features):
         # init fields
         self.strings = {string: i for (i, string) in enumerate(strings)}
-        self.features = {k: j for (j, k) in enumerate(features)}
-        self.K = []
+        self.features = {f: j for (j, f) in enumerate(features)}
 
         # init sparse array
         n = len(strings)
@@ -19,21 +18,46 @@ class MSK:
         A = sps.lil_matrix((n, d), dtype=np.float64)
 
         # convert DD to sparse matrix
-        for s in self.strings:
-            i = self.strings[s]
-            v = DD[s]
-            for k in v:
-                j = self.features[k]
-                A[i, j] = v[k]  # i,j are the string,feature indices, k is the feature index in v
+        if DD is not None:
+            for s in self.strings:
+                i = self.strings[s]
+                v = DD[s]
+                for k in v:
+                    j = self.features[k]
+                    A[i, j] = v[k]  # i,j are the string,feature indices, k is the feature index in v
 
         self.M = A
+
+    def shape(self):
+        return self.M.shape
 
     def makeLinearKernel(self):
         return LinearKernel(self.strings, self.M)
 
     def normalize(self, norm='l2'):
-        self.M = normalize(self.M, norm, axis=1)
+        self.M = normalize(self.M, norm, axis=1)  # normalize rows
         return self
+
+    def materialize(self, strings=None, features=None):
+        if strings is None:
+            strings = self.strings
+        if features is None:
+            features = self.features
+
+        pi_i = [self.strings[s] for s in strings]
+        pi_j = [self.features[f] for f in features]
+        A = self.M[np.ix_(pi_i, pi_j)]
+        return A  # list has a more efficient cell access
+
+    def getNonZeroFeatures(self, s):
+        i = self.strings[s]
+        dict = {}
+        for f in self.features:
+            j = self.features[f]
+            if self.M[i, j] != 0:
+                dict[f] = self.M[i, j]
+
+        return dict
 
 
 class LinearKernel:
@@ -41,7 +65,7 @@ class LinearKernel:
         self.strings = strings
         self.K = (M * M.T).todense()
 
-    def materializeKernel(self, strings1=None, strings2=None):
+    def materialize(self, strings1=None, strings2=None):
         if strings1 is None:
             strings1 = self.strings
         pi_i = [self.strings[s] for s in strings1]
@@ -50,7 +74,9 @@ class LinearKernel:
             pi_j = pi_i
         else:
             pi_j = [self.strings[s] for s in strings2]
-        return self.K[np.ix_(pi_i, pi_j)].tolist()  # list has a more efficient access
+
+        A = self.K[np.ix_(pi_i, pi_j)]
+        return A  # list has a more efficient cell access
 
 
 if __name__ == '__main__':  # test

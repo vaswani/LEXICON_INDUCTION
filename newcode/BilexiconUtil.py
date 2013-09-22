@@ -1,5 +1,6 @@
 # computes precision and recall scores
 from collections import defaultdict
+import math
 import common
 import sys
 import csv
@@ -77,13 +78,25 @@ def is_valid_match(lex, source_word, target_word):
     return target_word in lex[source_word]
 
 
-def outputScores(scores, title):
-    np.argwhere(scores.recall)
+def format(x, format='.3f'):
+    if np.isscalar(x):
+        return ('{:'+format+'}').format(x)
+    else:
+        return np.array([('{:'+format+'}').format(i) for i in x])
 
-    cutoff = [0.1, 0.25, 1.0/3, 0.4, 0.5, 0.65]
+
+def outputScores(scores, title):
+    cutoff = [0.1, 0.25, 1.0/3, 0.5, 2.0/3, 0.7, 0.72, 0.75, 0.77]
     p = []
     r = []
     f = []
+
+    d = 3
+    cutoff = np.around(cutoff, decimals=d)
+    scores.precision = np.around(scores.precision, decimals=d)
+    scores.recall = np.around(scores.recall, decimals=d)
+    scores.F1 = np.around(scores.F1, decimals=d)
+
     for i, c in enumerate(cutoff):
         J = np.argwhere(scores.recall >= c)
 
@@ -93,16 +106,21 @@ def outputScores(scores, title):
             r.append(scores.recall[j][0])
             f.append(scores.F1[j][0])
         else:
-            p.append(-0.01)
-            r.append(-0.01)
-            f.append(-0.01)
+            p.append(0)
+            r.append(0)
+            f.append(0)
 
     print 'Final Scores', title, ':'
     print '============='
-    print 'cutoff:', np.array(cutoff)
     print 'Prec''  :', np.array(p)
-    print 'Recall:', np.array(r)
+    print 'Recall:', np.array(cutoff)
+    #print 'Recall:', np.array(r)
     print 'F1    :', np.array(f)
+
+    (maxF1, i) = common.max(scores.F1)
+    precision_i = scores.precision[i]
+    recall_i = scores.recall[i]
+    print 'max F1:', (maxF1), 'precision: ', (precision_i), 'recall:', (recall_i)
 
 
 # computes the F1 score
@@ -110,6 +128,7 @@ def F1(p, r, beta=1):
     sqr_beta = beta**2
     D = sqr_beta*p + r
     score = (1 + sqr_beta) * (p*r) / D
+    score = [0 if math.isnan(s) else s for s in score]  # fix nans
     return score
 
 

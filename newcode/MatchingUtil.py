@@ -5,7 +5,7 @@ import numpy as np
 import BilexiconUtil as BU
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]})
-from cyMatching import cy_ApproxMatch
+from cyMatching import cy_ApproxMatch, cy_min_submatrix, cy_min_submatrix2
 
 
 def getMatching(X, Y, pi, edge_cost):
@@ -17,9 +17,9 @@ def getMatching(X, Y, pi, edge_cost):
 
 def makeWeights(options, X, Y, GX, GY):
     # hack to compute scores using normalized projections
-    # if options.normalize_projections == 1:
-    #     X = common.normalize_rows(X)  # note that normalize_rows works on arrays, not matrices.
-    #     Y = common.normalize_rows(Y)
+    if options.normalize_projections == 1:
+        X = common.normalize_rows(X, 2)  # note that normalize_rows works on arrays, not matrices.
+        Y = common.normalize_rows(Y, 2)
 
     X = np.mat(X)
     Y = np.mat(Y)
@@ -27,27 +27,54 @@ def makeWeights(options, X, Y, GX, GY):
     if GX is not None or GY is not None:
         GX = np.mat(GX)
         GY = np.mat(GY)
+    Z = np.mat(0)
     if options.weight_type == 'inner':
         U = X*Y.T  # linear kernel
-        if options.K > 0:  # TODO: add higher order graphs
+        if options.alpha > 0:  # TODO: add higher order graphs
             Z = GX * U * GY.T
-            W = options.alpha*Z + (1-options.alpha)*U
+            W = (1-options.alpha)*U + options.alpha*Z
         else:
             W = U
-        # for m in range(1, options.M+1):
-        #     Z += (options.alpha ** m) * ((GX ** m) * U * (GY.T ** m))
-        # TODO: context: why is the norm of X so small in our case?
         W = np.max(W) - W
     elif options.weight_type == 'dist':
         U = common.dist(X, Y)
-        if options.K > 0:  # TODO: add higher order graph
+        if options.alpha > 0:  # TODO: add higher order graph
             Z = common.dist(GX * X, GY * Y)
-            W = options.alpha*Z + (1-options.alpha)*U
+            W = (1-options.alpha)*U + options.alpha*Z
         else:
             W = U
+    elif options.weight_type == 'sqrdist':
+        U = common.dist(X, Y, metric='sqeuclidean')
+        if options.alpha > 0:  # TODO: add higher order graph
+            Z = common.dist(GX * X, GY * Y, metric='sqeuclidean')
+            W = (1-options.alpha)*U + options.alpha*Z
+        else:
+            W = U
+    elif options.weight_type == 'graph_min_dist':
+        U = common.dist(X, Y)
+        Z = np.mat(np.zeros(U.shape))
+        GX = np.array(GX)
+        GY = np.array(GY)
+        if options.alpha > 0:  # TODO: add higher order graph
+            N = X.shape[0]
+            rows_X = [[j for j in np.nonzero(GX[i, :])[0]] for i in xrange(N)]
+            rows_Y = [[j for j in np.nonzero(GY[i, :])[0]] for i in xrange(N)]
+            #rows_X = [np.array([j for j in np.nonzero(GX[i, :])[0]]) for i in xrange(N)]
+            #rows_Y = [np.array([j for j in np.nonzero(GY[i, :])[0]]) for i in xrange(N)]
+
+            for i in xrange(N):
+                if i % 100 == 0:
+                    print i
+                for j in xrange(N):
+                    #Z[i, j] = cy_min_submatrix2(U, rows_X[i], rows_Y[j])
+                    Z[i, j] = cy_min_submatrix(U, rows_X[i], rows_Y[j])
+
+            W = (1-options.alpha)*U + options.alpha*Z
     else:
         W = []
-    return W  # , U, Z
+
+    #print 'norm(U) = ', np.linalg.norm(U, 2), '| norm(Z) = ', np.linalg.norm(Z, 2)
+    return W  #, U, Z
 
 
 def fast_ApproxMatch(C):
