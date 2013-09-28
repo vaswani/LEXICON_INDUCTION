@@ -17,7 +17,6 @@ def readCSV(filename):
     return lines
 
 
-
 def readWords(filename):  # read the Word format from a CSV (word, frequency, feature1 ... featureD)
     common.log(50, 'reading Words:', filename)
     i = 0
@@ -87,23 +86,29 @@ def getHash(X, Y):
     return s[1:10] # just take the first 10 letters.
 
 
-def getMatchingFilename(options, X, Y):
-    # computes a canonical name for a matching, based on the original lists of words
-    h = getHash(X, Y)
-    filename = 'cache/matching=' + h + '_expid=' + str(options.exp_id) + '.csv'
-    return filename
+def writeString(filename, string):
+    with open(filename, 'wb') as f:
+        f.write(string)
 
 
-def writeMatching(options, X, Y, pi, edge_cost):  # writes a matching pi to a csv file.
-    filename = getMatchingFilename(options, X, Y)
-    print >> sys.stderr, 'writing matching into file ', filename
-    with open(filename, 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(pi)
-        writer.writerow(edge_cost)
-        matching = MU.getMatching(X, Y, pi, edge_cost)
-        writer.writerow(matching[0, :])
-        writer.writerow(matching[1, :])
+
+# def getMatchingFilename(options, X, Y):
+#     # computes a canonical name for a matching, based on the original lists of words
+#     h = getHash(X, Y)
+#     filename = 'cache/matching=' + h + '_expid=' + str(options.exp_id) + '.csv'
+#     return filename
+#
+#
+# def writeMatching(options, X, Y, pi, edge_cost):  # writes a matching pi to a csv file.
+#     filename = getMatchingFilename(options, X, Y)
+#     print >> sys.stderr, 'writing matching into file ', filename
+#     with open(filename, 'wb') as csvfile:
+#         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+#         writer.writerow(pi)
+#         writer.writerow(edge_cost)
+#         matching = MU.getMatching(X, Y, pi, edge_cost)
+#         writer.writerow(matching[0, :])
+#         writer.writerow(matching[1, :])
 
 
 def readMatching(options, X, Y):  # reads a matching from a csv file.

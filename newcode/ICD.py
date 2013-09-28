@@ -177,7 +177,13 @@ if __name__ == '__main__':
         assert common.norm(model.RT[0, :] - r0) < 1e-20
         # 7/7/2013 TL: implementation seems to be working correctly.
     elif nargs == 2:
-        print 'here'
+        N = 1000
+        D = 1000
+        X = common.randn((N, D))
+        U = X.dot(X.T)
+        import cProfile
+        cProfile.runctx('model = ICD.fast_ichol(U, 0.00001)', globals(), locals())
+
     elif nargs == 3:
         filename1 = sys.argv[1]
         filename2 = sys.argv[2]
@@ -193,3 +199,4 @@ if __name__ == '__main__':
 
         tau = 0.001
         cca_model = CU.learn0(W1.features, W2.features, tau)
+

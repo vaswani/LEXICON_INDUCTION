@@ -6,6 +6,8 @@ import BilexiconUtil as BU
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]})
 from cyMatching import cy_ApproxMatch, cy_min_submatrix, cy_min_submatrix2
+import munkres  # https://github.com/jfrelinger/cython-munkres-wrapper
+import LAPJV
 
 
 def getMatching(X, Y, pi, edge_cost):
@@ -63,21 +65,18 @@ def makeWeights(options, X, Y, GX, GY):
             #rows_Y = [np.array([j for j in np.nonzero(GY[i, :])[0]]) for i in xrange(N)]
 
             for i in xrange(N):
-                if i % 100 == 0:
-                    print i
                 for j in xrange(N):
                     #Z[i, j] = cy_min_submatrix2(U, rows_X[i], rows_Y[j])
                     Z[i, j] = cy_min_submatrix(U, rows_X[i], rows_Y[j])
-
-            W = (1-options.alpha)*U + options.alpha*Z
+        W = (1-options.alpha)*U + options.alpha*Z
     else:
         W = []
 
     #print 'norm(U) = ', np.linalg.norm(U, 2), '| norm(Z) = ', np.linalg.norm(Z, 2)
-    return W  #, U, Z
+    return W, U, Z
 
 
-def fast_ApproxMatch(C):
+def fast_approxMatch(C):
     if isinstance(C, np.matrix):
         C = np.array(C, dtype=np.double)
     return cy_ApproxMatch(C)
@@ -85,7 +84,7 @@ def fast_ApproxMatch(C):
 
 # Approximate minimum weighted matching on the input C
 # returns the cost = \sum C[ i, pi[i] ]
-def ApproxMatch(C):
+def approxMatch(C):
     N = C.shape[1]
     left = [0] * N
     right = [0] * N
@@ -114,25 +113,45 @@ def ApproxMatch(C):
     return cost, pi, edge_cost
 
 
+def exactMatch(A, resolution=1e-16):
+    # via tha LAPJV algorithm
+    A = np.array(A)
+    [pi, cost, v, u, costMat] = LAPJV.cy_lapjv(A, resolution)
+    N = len(pi)
+    edge_cost = A[xrange(N), pi]
+    return cost, np.array(pi), np.array(edge_cost)
+
+
 def printMatching(wordsX, wordsY, sorted_edge_cost, lex=None):
+    print toString(wordsX, wordsY, sorted_edge_cost, lex)
+
+
+def toString(wordsX, wordsY, sorted_edge_cost, lex=None):
     N = len(sorted_edge_cost)
+    s = ''
     for n in xrange(N):
         weight = sorted_edge_cost[n]
         source_word = wordsX[n]
         target_word = wordsY[n]
         if lex is not None:
             matched = BU.is_valid_match(lex, source_word, target_word)
-            matched = "correct" if matched else "wrong"
+            matched = "correct" if matched else " wrong "
         else:
             matched = source_word == target_word
-        common.log(200, '{} - {:>12}) {:>12} {:>12} {:>6}'.format(matched, n, source_word, target_word, weight))
+        #common.log(200, '{},{},{},{:>6},{:>12}'.format(source_word, target_word, matched, weight, n))
+        #common.log(200, '{} - {:>12}) {:>12} {:>12} {:>6}'.format(matched, n, source_word, target_word, weight))
+        # s += '{} - {:>4}),{:>10},{:>10},{:>4}'.format(matched, n, source_word, target_word, weight)
+        s += '{} - {:>10},{:>10}'.format(matched, source_word, target_word)
+        s += '\n'
+    return s
 
 
-if __name__ == '__main__':  # test
+
+def test1():
     # test
     C = np.matrix('1 -1 1 1; 1 1 1 0; 0 1 1 1 ;1 -3 -2 1')
-    (cost, pi, edge_cost) = ApproxMatch(C)
-    (cy_cost, cy_pi, cy_edge_cost) = fast_ApproxMatch(C)
+    (cost, pi, edge_cost) = approxMatch(C)
+    (cy_cost, cy_pi, cy_edge_cost) = fast_approxMatch(C)
     print C
     print "cost:", cost, cy_cost-cost
     print pi, pi-cy_pi
@@ -142,10 +161,10 @@ if __name__ == '__main__':  # test
     np.random.seed(1)
     C = common.randn((D, D))
     import cProfile
-    cProfile.runctx('(cost, pi, edge_cost) = ApproxMatch(C)', globals(), locals())
+    cProfile.runctx('(cost, pi, edge_cost) = approxMatch(C)', globals(), locals())
     cProfile.runctx('(cy_cost0, cy_pi0, cy_edge_cost0) = cy_ApproxMatch(C)', globals(), locals())
-    #(cost, pi, edge_cost) = ApproxMatch(C)
-    #(cy_cost, cy_pi, cy_edge_cost) = cy_ApproxMatch(C)
+    (cost, pi, edge_cost) = approxMatch(C)
+    (cy_cost0, cy_pi0, cy_edge_cost0) = cy_ApproxMatch(C)
 
     assert np.linalg.norm(cy_cost0-cost) == 0
     assert np.linalg.norm(pi-cy_pi0) == 0
@@ -177,7 +196,8 @@ if __name__ == '__main__':  # test
     options.weight_type = 'dist'
     options.K = 1  # K is not really 1 here, but a non-zero value is required.
     options.alpha = 0.3
-    W = makeWeights(options, X, Y, GX, GY)
+    options.normalize_projections = 1
+    W, U, Z = makeWeights(options, X, Y, GX, GY)
     print 'W shape: ', W.shape
     print W
 # output should be
@@ -194,3 +214,20 @@ if __name__ == '__main__':  # test
 #  [ 1.375   2.2009  3.0356  2.6965]
 #  [ 2.6659  1.7213  2.7032  2.7192]
 #  [ 2.0872  1.8698  2.1393  2.3427]]
+
+
+def test2():
+    N = 3000
+    D = 50
+    X = common.randn((N, D))
+    Y = common.randn((N, D))
+    U = common.dist(X, Y)
+
+    import cProfile
+    #cProfile.runctx('(cost, pi, edge_cost) = approxMatch(U)', globals(), locals())
+    cProfile.runctx('(cy_cost0, cy_pi0, cy_edge_cost0) = cy_ApproxMatch(U)', globals(), locals())
+    print cy_cost0
+
+
+if __name__ == '__main__':  # test
+    test1()

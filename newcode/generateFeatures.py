@@ -1,6 +1,7 @@
 from collections import Counter
 from collections import OrderedDict
-from common import *
+from collections import defaultdict
+import common
 import nltk
 import sys
 import IO
@@ -31,10 +32,10 @@ def getTopNouns(filename, nouns, K, mode):
         corpus.append(nouns_in_line)
 
         if j % 10000 == 0:
-            log(100, 'Parsed sentence:', j)
+            common.log(100, 'Parsed sentence:', j)
 
     #print corpus
-    log(100, "parsed", j, 'sentences')
+    common.log(100, "parsed", j, 'sentences')
     # count only nouns
     return OrderedDict(counter_noun.most_common(K)), corpus
 
@@ -53,7 +54,7 @@ def readTags(filename, accept_tags=None):
 
 
 def extractContextFeatures(corpus, nouns, top_nouns, window_size):
-    context_features = defaultdict(dd)
+    context_features = defaultdict(common.dd)
     d = window_size
     pair_count = 0
     sum_L0 = 0
@@ -74,8 +75,8 @@ def extractContextFeatures(corpus, nouns, top_nouns, window_size):
     for noun in context_features:
         sum_L0 += len(context_features[noun])
 
-    log(100, 'pair count', pair_count)
-    log(100, 'avg non-zero', sum_L0 / len(top_nouns))
+    common.log(100, 'pair count', pair_count)
+    common.log(100, 'avg non-zero', sum_L0 / len(top_nouns))
     return context_features
 
 
@@ -125,9 +126,9 @@ if __name__ == '__main__':
         accept_tags = ['NN', 'NNS', 'NP', 'NPS']
     elif lang == 'es':
         accept_tags = ['NC', 'NP']
-    out_filename = lang + '_' + 'pickled.txt'
+    out_filename = lang + '_' + 'pickled_N='+str(N)+'.txt'
 
-    log(100, 'Extracting', N, 'top nouns', '-- accepted tags:', accept_tags)
+    common.log(100, 'Extracting', N, 'top nouns', '-- accepted tags:', accept_tags)
     top_nouns_freq, context_features, feature_names = extract(filename_text, filename_tags, accept_tags, N)
 
     # sort by frequency (descending)

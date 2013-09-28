@@ -32,7 +32,7 @@ class Words:
         self.features = np.array(self.features)
         self.G = np.array(self.G)
 
-    def setupFeatures(self):
+    def setupFeatures(self, options=None):
         #logFr = np.log(X.freq)
         # L = strings.strlen(self.words)
 

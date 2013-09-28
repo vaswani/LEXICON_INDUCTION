@@ -27,8 +27,15 @@ def diag(v, d1=None, d2=None):
     return S
 
 
+def invertDict(D):
+    return {D[key]: key for key in D}
+
+
 def submatrix(A, rows, cols):  # this is quite slow for some reason, maybe since a new array is allocated.
-    return A[np.ix_(rows, cols)]
+    rows = asVector(rows)
+    cols = asVector(cols)
+    I = np.ix_(rows, cols)
+    return A[I]
 
 
 def normalize_rows(V, p=2):  # assumes V is a numpy array!

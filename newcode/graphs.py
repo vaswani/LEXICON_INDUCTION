@@ -67,6 +67,14 @@ def knn_graph(X, k):
     return G, idx
 
 
+def toSymmetricStochastic(G, sym=True, stochastic=True, norm='l1'):
+    if sym:
+        G = (G + G.T) / 2
+    if stochastic:
+        G = normalize(G, norm, axis=1)  # make stochastic matrix.
+    return G
+
+
 # def permute(G, pi):
 #     (N, _) = G.shape
 #     M = len(pi)
@@ -85,11 +93,3 @@ if __name__ == '__main__':
     print "G-KG", np.linalg.norm((G-KG).todense())
     print 'G:\n', G.todense()
     print 'D:\n', D
-
-
-def toSymmetricStochastic(G, sym=True, stochastic=True, norm='l1'):
-    if sym:
-        G = (G + G.T) / 2
-    if stochastic:
-        G = normalize(G, norm, axis=1)  # make stochastic matrix.
-    return G

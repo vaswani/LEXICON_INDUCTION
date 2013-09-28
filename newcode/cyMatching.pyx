@@ -9,22 +9,21 @@ def cy_ApproxMatch(np.ndarray[double, ndim=2] C):
     cdef unsigned int N = C.shape[1]
     cdef np.ndarray[np.int32_t, ndim=1] left = np.zeros(N, dtype=np.int32)
     cdef np.ndarray[np.int32_t, ndim=1] right = np.zeros(N, dtype=np.int32)
-    cdef np.ndarray[np.int32_t, ndim=2] I0 = np.tile(np.arange(N, dtype=np.int32), [N, 1])
-    cdef np.ndarray[np.int32_t, ndim=2] J0 = I0.T
-    cdef np.ndarray[np.int32_t, ndim=1] I = I0.flatten()
-    cdef np.ndarray[np.int32_t, ndim=1] J = J0.flatten()
+    cdef np.ndarray[np.int32_t, ndim=1] I = np.tile(np.arange(N, dtype=np.int32), [N, 1]).flatten()
+    cdef np.ndarray[np.int32_t, ndim=1] J = np.tile(np.arange(N, dtype=np.int32), [N, 1]).T.flatten()
 
     cdef np.ndarray[np.int32_t, ndim=1] sigma = np.array(np.argsort(C.flatten()), dtype=np.int32)
     #sigma = sigma.flat
     cdef np.ndarray[np.int32_t, ndim=1] pi = np.zeros(N, dtype=np.int32)
     cdef np.ndarray[double, ndim=1] edge_cost = np.zeros(N)
 
-    cdef unsigned int element, i, j
+    cdef size_t e
+    cdef size_t i, j
 
-    for element in sigma.flat:
-        #element = sigma[m]
-        i = I[element]
-        j = J[element]
+    #for element in sigma.flat:
+    for e in xrange(sigma.shape[0]):
+        i = I[sigma[e]]
+        j = J[sigma[e]]
         if left[i] == 0 and right[j] == 0:
             pi[j] = i
             edge_cost[j] = C[j, i]

@@ -24,6 +24,8 @@ def find_matching(options, wordsX, wordsY):
     # initially, assume that pi is ID
     N = len(wordsX.words)
     M = N - options.seed_length  # The first M entries can be permuted. The rest are fixed
+    GX = None
+    GY = None
 
     fixed_point = False
     for t in range(0, options.T):
@@ -41,21 +43,23 @@ def find_matching(options, wordsX, wordsY):
         #     fixedX += options.noise_level*common.randn(fixedX.shape)
         #     fixedY += options.noise_level*common.randn(fixedY.shape)
 
-        print colored('CCA dimensions =', 'green'), len(fixedX)
+        print >> sys.stderr, colored('CCA dimensions =', 'green'), len(fixedX)
         cca_model = CU.learn(fixedX, fixedY , options)
-        print len(cca_model.p), 'Top 10 correlation coefficients:', cca_model.p[:10]
+        print >> sys.stderr, len(cca_model.p), 'Top 10 correlation coefficients:', cca_model.p[:10]
         # STEP 2: compute CCA representation of all samples
-        print 'norms', norm(wordsX.features), norm(wordsY.features)
+        print >> sys.stderr, 'norms', norm(wordsX.features), norm(wordsY.features)
         Z = CU.project(options, cca_model, wordsX.features, wordsY.features)
 
-        print 'Z', norm(Z.X), norm(Z.Y)
-
+        print >> sys.stderr, 'Z', norm(Z.X), norm(Z.Y)
 
         # STEP 3: compute weight matrix and run matching (approximate) algorithm
-        GX = wordsX.materializeGraph()
-        GY = wordsY.materializeGraph()
-        W = MU.makeWeights(options, Z.X, Z.Y, GX, GY)
-        (cost, pi_t, edge_cost) = MU.fast_ApproxMatch(W[:M, :M])
+        if options.alpha > 0:
+            GX = wordsX.materializeGraph()
+            GY = wordsY.materializeGraph()
+        print >> sys.stderr, colored('Computing matching weight matrix.', 'green')
+        W, U0, Z0 = MU.makeWeights(options, Z.X, Z.Y, GX, GY)
+        print >> sys.stderr, 'Matching.'
+        (cost, pi_t, edge_cost) = MU.exactMatch(W[:M, :M])
         # STEP 4: sort the words, such that the best matches are at the end.
         # note that pi_t is of length M < N and that
         (sorted_edge_cost, I) = perm.sort(edge_cost, reverse=True)
@@ -67,19 +71,21 @@ def find_matching(options, wordsX, wordsY):
             wordsX.permuteFirstWords(I)
             wordsY.permuteFirstWords(pi_t[I])
             # END OF ITERATION: output Matching
-        print 'cost =', cost, 'latent inner product = ', np.sum(Z.X.A * Z.Y.A)
+        print >> sys.stderr, 'cost =', cost, 'latent inner product = ', np.sum(Z.X.A * Z.Y.A)
 
         #MU.printMatching(wordsX.words[:M], wordsY.words[:M], sorted_edge_cost[:M], options.gold_lex)
         if options.gold_lex is not None:
             scores = BU.getScores(options.gold_lex, wordsX.words[:M], wordsY.words[:M], sorted_edge_cost[:M])
             BU.outputScores(scores, options.title)
 
-        log(100, '---------- ', 'iteration = ', (t+1), '/', options.T, '----------\n')
+        print '---------- ', 'iteration = ', (t+1), '/', options.T, '----------'
+        sys.stdout.flush()
         if fixed_point:
             break
 
     # either we reached the maximum number of iterations, or a fixed point
     log(100, 'Stopped after, ', (t+1), 'iterations. Fixed point =', fixed_point)
+    IO.writeString(options.matchingFilename, MU.toString(wordsX.words[:M], wordsY.words[:M], sorted_edge_cost[:M], options.gold_lex))
     if options.is_mock:
         log('Hamming distance:', perm.hamming(wordsX.words, wordsY.words))
     return wordsX, wordsY, sorted_edge_cost, cost
@@ -94,11 +100,11 @@ def mcca(options, wordsX, wordsY, seed_list):
     wordsY.setupFeatures()
     wordsY.computeKernel(options)
 
-    print colored("Initial matching hamming distance:", 'yellow'), perm.hamming(wordsX.words[:N_seed], wordsY.words[:N_seed]), '/', N_seed
+    print >> sys.stderr, colored("Initial matching hamming distance:", 'yellow'), perm.hamming(wordsX.words[:N_seed], wordsY.words[:N_seed]), '/', N_seed
     options.seed_length = N_seed
 
     (newX, newY, edge_cost, cost) = find_matching(options, wordsX, wordsY)
-    print colored("mcca is Done.", 'green')
+    print >> sys.stderr, colored("mcca is Done.", 'green')
     return newX, newY, edge_cost, cost
 
 
@@ -161,7 +167,7 @@ def parseOptions():
     parser.add_option('--useContextFeatures', dest='useContextFeatures', type="int", action='store', default=1)
     parser.add_option('--useOrthoFeatures', dest='useOrthoFeatures', type="int", action='store', default=1)
     # mcca setting
-    parser.add_option('-z', '--step_size', dest='step_size', type="int", action='store', default=100)
+    parser.add_option('-z', '--step_size', dest='step_size', type="int", action='store', default=150)
     parser.add_option('-T', '--iterations', dest='T', type="int", action='store', default=10)
     parser.add_option('-w', '--weight_type', dest='weight_type', action='store', default='inner')    
     parser.add_option('-t', '--tau', dest='tau', type="float", action='store', default=0.001)  # CCA regularizer
@@ -201,9 +207,9 @@ if __name__ == '__main__':
     options = parseOptions()
     # read input files
     wordsX, wordsY, seed_list = readInput(options, filename_wordsX, filename_wordsY, filename_seed)
-
+    N = len(wordsX.words)
+    options.matchingFilename = 'results/matching_N=%d_expid=%d_alpha=%2.2f_T=%d.txt' % (N, options.exp_id, options.alpha, options.T)
     NSeed = len(seed_list.X)
-
     if options.filename_lexicon is not None:
         lex = BU.readLexicon(options.filename_lexicon)
         (gold_lex, times) = BU.filterLexicon(lex, wordsX.words[:-NSeed], wordsY.words[:-NSeed])
@@ -213,9 +219,9 @@ if __name__ == '__main__':
         options.gold_lex = None
         print colored("WARNING: No gold lexicon", 'red')
 
-    print "==============#########=========="
-    print "Starting mCCA:"
-    print NSeed, "seed pairs:", zip(seed_list.X, seed_list.Y)
+    print >> sys.stderr, "==============#########=========="
+    print >> sys.stderr, "Starting mCCA:"
+    print >> sys.stderr, NSeed, "seed pairs:", zip(seed_list.X, seed_list.Y)
     (wordsX, wordsY, edge_cost, cost) = mcca(options, wordsX, wordsY, seed_list)
     log(0, 'hamming distance:', perm.hamming(wordsX.words, wordsY.words))
     bell()

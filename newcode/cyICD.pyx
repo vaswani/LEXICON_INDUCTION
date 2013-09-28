@@ -7,9 +7,7 @@ def cy_ichol(np.ndarray[double, ndim=2] K, double eta):
     cdef unsigned int i = 0
     cdef unsigned int j = 0
     cdef unsigned int jj = 0
-    cdef unsigned int D
-    cdef unsigned int best_i
-    cdef unsigned int p_j
+    cdef unsigned int D, best_i, p_j
 
     cdef unsigned int N = len(K)
     cdef np.ndarray[double, ndim=1] d = np.diag(K).copy()

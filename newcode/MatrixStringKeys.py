@@ -2,6 +2,7 @@ import scipy.sparse as sps
 import numpy as np
 import time
 from sklearn.preprocessing import normalize
+import common
 
 
 # given DD - a dictionary of dictionaries with format DD[string][feature] = numeric value
@@ -11,6 +12,8 @@ class MSK:
         # init fields
         self.strings = {string: i for (i, string) in enumerate(strings)}
         self.features = {f: j for (j, f) in enumerate(features)}
+        self.reverseStrings = common.invertDict(self.strings)
+        self.reverseFeatures = common.invertDict(self.features)
 
         # init sparse array
         n = len(strings)
@@ -46,7 +49,7 @@ class MSK:
 
         pi_i = [self.strings[s] for s in strings]
         pi_j = [self.features[f] for f in features]
-        A = self.M[np.ix_(pi_i, pi_j)]
+        A = common.submatrix(self.M, pi_i, pi_j)
         return A  # list has a more efficient cell access
 
     def getNonZeroFeatures(self, s):
