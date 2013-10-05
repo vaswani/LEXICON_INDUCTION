@@ -39,8 +39,12 @@ class Words:
         # normalize the features
         if self.isPickled():
             (orthoDD, orthoFeatures) = strings.to_ngram_dictionary(self.words, affix=True)
-            self.orthoMSK = MSK(orthoDD, self.words, orthoFeatures).normalize(norm='l2')
-            self.contextMSK = MSK(self.repr, self.words, self.featureNames).normalize(norm='l2')
+            if options.log_features == 1:
+                self.orthoMSK = MSK(orthoDD, self.words, orthoFeatures).log(offset=1).normalize(norm='l2')
+                self.contextMSK = MSK(self.repr, self.words, self.featureNames).log(offset=1).normalize(norm='l2')
+            else:
+                self.orthoMSK = MSK(orthoDD, self.words, orthoFeatures).normalize(norm='l2')
+                self.contextMSK = MSK(self.repr, self.words, self.featureNames).normalize(norm='l2')
         else:
             self.features = common.normalize_rows(self.features)
         # TODO: should be add logFr and L ?
@@ -53,8 +57,8 @@ class Words:
         print >> sys.stderr, 'Computing Context Kernel for', self.name
         return self.contextMSK.makeLinearKernel()
 
-    def cacheOrComputeKernel(self, filename, f):
-        if os.path.exists(filename):
+    def cacheOrComputeKernel(self, options, filename, f):
+        if options.useCache == 1 and os.path.exists(filename):
             print >> sys.stderr, 'Loading kernel from file:', filename
             return IO.unpickle(filename)
         else:
@@ -71,13 +75,13 @@ class Words:
         if options.useContextFeatures == 1:
             filename_ck = self.name.replace('.', '_context_kernel.')
 
-            K_context = self.cacheOrComputeKernel(filename_ck, lambda self: self.computeContextKernel())
+            K_context = self.cacheOrComputeKernel(options, filename_ck, lambda self: self.computeContextKernel())
             #K_context0 = self.computeContextKernel()
             #print 'AAA: ', np.linalg.norm(K_context.K - K_context0.K)
 
         if options.useOrthoFeatures == 1:
             filename_ok = self.name.replace('.', '_ortho_kernel.')
-            K_ortho = self.cacheOrComputeKernel(filename_ok, lambda self: self.computeOrthographicKernel())
+            K_ortho = self.cacheOrComputeKernel(options, filename_ok, lambda self: self.computeOrthographicKernel())
             #K_ortho0 = self.computeOrthographicKernel()
             #print 'BBB: ', np.linalg.norm(K_ortho.K - K_ortho0.K)
 

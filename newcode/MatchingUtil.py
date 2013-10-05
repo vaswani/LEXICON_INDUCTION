@@ -5,9 +5,10 @@ import numpy as np
 import BilexiconUtil as BU
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]})
-from cyMatching import cy_ApproxMatch, cy_min_submatrix, cy_min_submatrix2
+from cyMatching import cy_ApproxMatch, cy_min_submatrix, cy_min_submatrix2, cy_getGraphMinDist
 import munkres  # https://github.com/jfrelinger/cython-munkres-wrapper
 import LAPJV
+import IO
 
 
 def getMatching(X, Y, pi, edge_cost):
@@ -15,6 +16,11 @@ def getMatching(X, Y, pi, edge_cost):
     sigma = np.argsort(edge_cost)
     M = M[:, sigma]
     return M
+
+
+def saveWUZ(U, W, Z, options):
+    S = (W, U, Z)
+    IO.pickle('tmp/S_t=' + str(options.t) + '.txt', S)
 
 
 def makeWeights(options, X, Y, GX, GY):
@@ -54,24 +60,15 @@ def makeWeights(options, X, Y, GX, GY):
             W = U
     elif options.weight_type == 'graph_min_dist':
         U = common.dist(X, Y)
-        Z = np.mat(np.zeros(U.shape))
         GX = np.array(GX)
         GY = np.array(GY)
         if options.alpha > 0:  # TODO: add higher order graph
-            N = X.shape[0]
-            rows_X = [[j for j in np.nonzero(GX[i, :])[0]] for i in xrange(N)]
-            rows_Y = [[j for j in np.nonzero(GY[i, :])[0]] for i in xrange(N)]
-            #rows_X = [np.array([j for j in np.nonzero(GX[i, :])[0]]) for i in xrange(N)]
-            #rows_Y = [np.array([j for j in np.nonzero(GY[i, :])[0]]) for i in xrange(N)]
-
-            for i in xrange(N):
-                for j in xrange(N):
-                    #Z[i, j] = cy_min_submatrix2(U, rows_X[i], rows_Y[j])
-                    Z[i, j] = cy_min_submatrix(U, rows_X[i], rows_Y[j])
+            Z, IX, IY = cy_getGraphMinDist(GX, GY, U)
         W = (1-options.alpha)*U + options.alpha*Z
     else:
         W = []
 
+    saveWUZ(U, W, Z, options)
     #print 'norm(U) = ', np.linalg.norm(U, 2), '| norm(Z) = ', np.linalg.norm(Z, 2)
     return W, U, Z
 
@@ -113,10 +110,13 @@ def approxMatch(C):
     return cost, pi, edge_cost
 
 
-def exactMatch(A, resolution=1e-16):
+def exactMatch(A, resolution=1e-8, cython=True):
     # via tha LAPJV algorithm
     A = np.array(A)
-    [pi, cost, v, u, costMat] = LAPJV.cy_lapjv(A, resolution)
+    if cython:
+        [pi, cost, v, u, costMat] = LAPJV.fast_lapjv(A, resolution)
+    else:
+        [pi, cost, v, u, costMat] = LAPJV.lapjv(A, resolution)
     N = len(pi)
     edge_cost = A[xrange(N), pi]
     return cost, np.array(pi), np.array(edge_cost)

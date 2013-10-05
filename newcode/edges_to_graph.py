@@ -46,10 +46,15 @@ if __name__ == '__main__':
     for row in lines:
         a = row[0]
         b = row[1]
-        if a == b and options.selfloop == 0:
-            continue
+        #if a == b and options.selfloop == 0:
+        #    continue
         DD[a][b] = 1
         count += 1
+
+    if options.selfloop:
+        cc = 0
+        for a in wordsX.words:
+            DD[a][a] = 1
 
     # connect (w,u) if an edge (w_lower, u_lower) exists
     words = wordsX.words
@@ -83,7 +88,7 @@ if __name__ == '__main__':
         G = toSymmetricStochastic(G, sym=(options.sym == 1), stochastic=(options.stochastic == 1), norm='l2')
 
     msk.M = G
-    graphFilename = filename_edges.replace('.', '_graph.')
+    graphFilename = filename_edges.replace('.edges', '.graph')
     print >> sys.stderr, "Writing graph for N =", N, "words, edge count =", count
     print >> sys.stderr, "Filename:", graphFilename
     IO.pickle(graphFilename, msk)

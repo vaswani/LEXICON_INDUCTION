@@ -86,7 +86,7 @@ def format(x, format='.3f'):
 
 
 def outputScores(scores, title):
-    cutoff = [0.1, 0.25, 1.0/3, 0.5, 2.0/3, 0.7, 0.72, 0.75, 0.77]
+    cutoff = [0.1, 0.25, 1.0/3, 0.5, 2.0/3, 0.75, 0.77, 0.8]
     p = []
     r = []
     f = []

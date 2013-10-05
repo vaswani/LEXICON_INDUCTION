@@ -57,6 +57,7 @@ def find_matching(options, wordsX, wordsY):
             GX = wordsX.materializeGraph()
             GY = wordsY.materializeGraph()
         print >> sys.stderr, colored('Computing matching weight matrix.', 'green')
+
         W, U0, Z0 = MU.makeWeights(options, Z.X, Z.Y, GX, GY)
         print >> sys.stderr, 'Matching.'
         (cost, pi_t, edge_cost) = MU.exactMatch(W[:M, :M])
@@ -94,10 +95,10 @@ def find_matching(options, wordsX, wordsY):
 def mcca(options, wordsX, wordsY, seed_list):
     N_seed = len(seed_list.X)
     # (N, D) = wordsX.features.shape
-    wordsX.setupFeatures()
+    wordsX.setupFeatures(options)
     wordsX.computeKernel(options)
 
-    wordsY.setupFeatures()
+    wordsY.setupFeatures(options)
     wordsY.computeKernel(options)
 
     print >> sys.stderr, colored("Initial matching hamming distance:", 'yellow'), perm.hamming(wordsX.words[:N_seed], wordsY.words[:N_seed]), '/', N_seed
@@ -166,13 +167,15 @@ def parseOptions():
     parser.add_option('-p', '--pickled', dest='pickled', type="int", action='store', default=1)
     parser.add_option('--useContextFeatures', dest='useContextFeatures', type="int", action='store', default=1)
     parser.add_option('--useOrthoFeatures', dest='useOrthoFeatures', type="int", action='store', default=1)
+    parser.add_option('--useCache', dest='useCache', type="int", action='store', default=1)
     # mcca setting
     parser.add_option('-z', '--step_size', dest='step_size', type="int", action='store', default=150)
     parser.add_option('-T', '--iterations', dest='T', type="int", action='store', default=10)
     parser.add_option('-w', '--weight_type', dest='weight_type', action='store', default='inner')    
     parser.add_option('-t', '--tau', dest='tau', type="float", action='store', default=0.001)  # CCA regularizer
     parser.add_option('--eta', dest='eta', type="float", action='store', default=0.001)
-    parser.add_option('--norm_proj', dest='normalize_projections', type="int", action='store', default=0)
+    parser.add_option('--log_features', dest='log_features', type="int", action='store', default=1)
+    parser.add_option('--norm_proj', dest='normalize_projections', type="int", action='store', default=1)
     parser.add_option('--covar_type', dest='covar_type', type="string", action='store', default=None)
     parser.add_option('--projection_type', dest='projection_type', type="string", action='store', default=None)
     # graph settings
@@ -194,7 +197,7 @@ def parseOptions():
     if options.filename_graphX is None:
         options.alpha = 0
 
-    options.title = "wt={}, K={}, alpha={}".format(options.weight_type, options.K, options.alpha)
+    options.title = "wt={}, alpha={}".format(options.weight_type, options.alpha)
 
     return options
     

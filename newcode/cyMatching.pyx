@@ -3,6 +3,8 @@
 cimport numpy as np
 import numpy as np
 
+DEF INFTY = float('inf')
+
 # Approximate minimum weighted matching on the input C
 # returns the cost = \sum C[ i, pi[i] ]
 def cy_ApproxMatch(np.ndarray[double, ndim=2] C):
@@ -37,26 +39,49 @@ def cy_ApproxMatch(np.ndarray[double, ndim=2] C):
 # Approximate minimum weighted matching on the input C
 # returns the cost = \sum C[ i, pi[i] ]
 def cy_min_submatrix(np.ndarray[double, ndim=2] U, rowX, rowY):
-    cdef unsigned int i, j
-    cdef double m = U[0, 0]
+    cdef size_t i, j, m, n
+    cdef double current_min = INFTY
 
     for i in rowX:
         for j in rowY:
-            if m > U[i, j]:
-                m = U[i, j]
-    return m
+            if current_min > U[i, j]:
+                current_min = U[i, j]
+                m = i
+                n = j
+    return current_min, m, n
 
-
+# this code is much faster than the one above only when rowX and rowY are not small arrays
 # Approximate minimum weighted matching on the input C
 # returns the cost = \sum C[ i, pi[i] ]
-def cy_min_submatrix2(np.ndarray[double, ndim=2] U, np.ndarray[long, ndim=1] rowX, np.ndarray[long, ndim=1] rowY):
-    cdef unsigned int i, j, ii, jj
-    cdef double m = U[0, 0]
+def cy_min_submatrix2(np.ndarray[double, ndim=2] U, np.ndarray[np.int32_t, ndim=1] rowX, np.ndarray[np.int32_t, ndim=1] rowY):
+    cdef size_t i, j, ii, jj
+    cdef double current_min = INFTY
+    cdef double v
 
-    for i in range(rowX.shape[0]):
+    cdef long NX = rowX.shape[0]
+    cdef long NY = rowY.shape[0]
+    for i in xrange(NX):
         ii = rowX[i]
-        for j in range(rowY.shape[0]):
+        for j in xrange(NY):
             jj = rowY[j]
-            if m > U[rowX[i], rowY[j]]:
-                m = U[rowX[i], rowY[j]]
-    return m
+            v = U[ii, jj]
+            if current_min > v:
+                current_min = v
+    return current_min
+
+def cy_getGraphMinDist(np.ndarray[double, ndim=2] GX, np.ndarray[double, ndim=2] GY,  np.ndarray[double, ndim=2] U):
+    cdef size_t n, m
+    cdef unsigned int N = GX.shape[0]
+    rows_X = [[m for m in np.nonzero(GX[n, :])[0]] for n in xrange(N)]
+    rows_Y = [[m for m in np.nonzero(GY[n, :])[0]] for n in xrange(N)]
+    cdef np.ndarray[double, ndim=2] Z = np.mat(np.zeros((N, N)))
+    cdef np.ndarray[np.int32_t, ndim=2] IX = np.mat(np.zeros((N, N)), dtype='i4')
+    cdef np.ndarray[np.int32_t, ndim=2] IY = np.mat(np.zeros((N, N)), dtype='i4')
+    #rows_X = [np.array([j for j in np.nonzero(GX[i, :])[0]], dtype='i4') for i in xrange(N)]
+    #rows_Y = [np.array([j for j in np.nonzero(GY[i, :])[0]], dtype='i4') for i in xrange(N)]
+    for n in xrange(N):
+        rowX = rows_X[n]
+        for m in xrange(N):
+            #Z[n, m] = cy_min_submatrix2(U, rowX, rows_Y[m])
+            Z[n, m], IX[n,m], IY[n,m] = cy_min_submatrix(U, rowX, rows_Y[m])
+    return Z, IX, IY

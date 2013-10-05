@@ -203,12 +203,13 @@ def lapjv(costMat, resolution=None):
                 k2 = vk[vf]
                 cf = colsol[j2] < 0
                 if np.any(cf):  # unassigned, shortest augmenting path is complete.
-                    i2 = find(cf, 1)
+                    i2 = find(cf, 1)[0]
                     endofpath = j2[i2]
                     unassignedfound = True
                 else:
                     i2 = len(cf)+1
                 # add to list to be scaned right away
+
                 for k in range(0, i2-1):
                     collist[k2[k]] = collist[up]
                     collist[up] = j2[k]
@@ -330,30 +331,54 @@ def testAgainstMunkres(N=100, d=100, round=False):
             print rowsol_munkres - rowsol
             print rowsol
             print A
-            asd
     print success, 'out of' , N
 
 
-def testPyCySpeed():
+def testPyCySpeed(d=200):
     # compare the python and cython implementations
     import time
-    d = 500
+    import munkres
+
     A = np.random.randn(d,d) / np.random.randn(d,d)
 
     t0 = time.time()
-    [rowsol, cost, v, u, costMat] = fast_lapjv(A)
-    elapsed = time.time() - t0
-    print 'cython', elapsed, cost
+    [rowsol, cost0, v, u, costMat] = fast_lapjv(A)
+    elapsed0 = time.time() - t0
+    print 'cython', elapsed0, cost0
 
     t1 = time.time()
-    [rowsol, cost, v, u, costMat] = lapjv(A)
-    elapsed = time.time() - t0
-    print 'python', elapsed, cost
+    [rowsol, cost1, v, u, costMat] = lapjv(A)
+    elapsed1 = time.time() - t1
+    print 'python', elapsed1, cost1
+
+    # t2 = time.time()
+    # E = munkres.munkres(A)
+    # elapsed2 = time.time() - t2
+    # rowsol_munkres = np.nonzero(E)[1]
+    # cost_munkres = (A[E]).sum()
+    # print 'Hungarian', elapsed2, cost_munkres
+    elapsed2 = 0
+    return elapsed0, elapsed1, elapsed2
 
 
 if __name__ == '__main__':
     import sys
-    N = 1
-    np.random.seed(int(sys.argv[1]))
-    testAgainstMunkres(1000, 30)
-    #testPyCySpeed()
+    s = (int(sys.argv[1]))
+    #np.random.seed(s)
+    #testAgainstMunkres(100, 200)
+    d = [500, 1000, 1500, 2000, 2500, 3000, 3500]
+    N = 5
+    v0 = np.zeros(len(d))
+    v1 = np.zeros(len(d))
+    v2 = np.zeros(len(d))
+    for i in xrange(len(d)):
+        for j in xrange(N):
+            e0, e1, e2 = testPyCySpeed(d[i])
+            v0[i] += e0
+            v1[i] += e1
+            v2[i] += e2
+    v0 /= N
+    v1 /= N
+    v2 /= N
+
+    V = np.array([v0, v1, v2])

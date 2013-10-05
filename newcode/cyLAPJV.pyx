@@ -30,12 +30,17 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
 
     cdef:
         int numfree
-        unsigned int rdim, cdim, dim
-        int i, imin
+        long rdim, cdim, dim
+        long i, imin
         int k
-        #int j1,j2
+        int j1, j2, i0
         #int r,imin
         # int imin
+        size_t loopcnt = 0
+        int prvnumfree
+        double umin, usubmin
+        double diff_min
+
 
     rdim = costMat.shape[0]
     cdim = costMat.shape[1]
@@ -55,13 +60,14 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
 
     cdef np.ndarray[double, ndim=1] v = zeros(1, dim)
     cdef np.ndarray[double, ndim=1] x, xh
-    cdef np.ndarray[long, ndim=1] rowsol = zeros(1, dim, long) - 1
-    cdef np.ndarray[long, ndim=1] colsol = zeros(dim, 1, long) - 1
+    cdef np.ndarray[np.int32_t, ndim=1] rowsol = zeros(1, dim, dtype='i4') - 1
+    cdef np.ndarray[np.int32_t, ndim=1] colsol = zeros(dim, 1, dtype='i4') - 1
+    cdef np.ndarray[np.int32_t, ndim=1] free, matches
 
     if np.std(costMat, ddof=1) < np.mean(costMat):
         numfree = -1
-        free = zeros(dim, 1)
-        matches = zeros(dim, 1, long)
+        free = zeros(dim, 1, dtype='i4')
+        matches = zeros(dim, 1, dtype='i4')
         for j in reversed(xrange(dim)):
             v[j], imin = min(asVector(costMat[:, j]))
             if not matches[imin]:
@@ -90,7 +96,7 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
     else:
         numfree = dim-2
         v1, r = min(costMat)
-        free = range(dim)
+        free = np.array(range(dim), dtype='i4')
         _, c = min(v1)
         imin = r[c]
         j = c
@@ -104,10 +110,6 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
         v[j] -= min(x)[0]
 
     # Augmenting reduction of unassigned rows
-    cdef unsigned int loopcnt = 0
-    cdef int prvnumfree
-    cdef double umin, usubmin
-
     while loopcnt < 2:
         loopcnt += 1
         # scan all free rows
@@ -120,17 +122,18 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
             k += 1
             i = free[k]
             # find minimum and second minimum reduced cost over columns
-            x = asVector(costMat[i, :] - v)
+            x = asVector(costMat[i, :]) - v
 
-            [umin, j1] = min(x)
+            umin, j1 = min(x)
 
             x[j1] = maxcost
-            [usubmin, j2] = min(x)
+            usubmin, j2 = min(x)
             i0 = colsol[j1]
-            if usubmin - umin > resolution:
+            diff_min = usubmin - umin
+            if diff_min > resolution:
                 # change the reduction of the minmum column to increase the
                 # minimum reduced cost in the row to the subminimum.
-                v[j1] -= (usubmin - umin)
+                v[j1] -= diff_min
             else:  # minimum and subminimum equal.
                 if i0 >= 0:  # minimum column j1 is assigned.
                     # swap columns j1 and j2, as j2 may be unassigned.
@@ -141,7 +144,7 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
             colsol[j1] = i
 
             if i0 >= 0:  # minimum column j1 assigned easier
-                if usubmin - umin > resolution:
+                if diff_min > resolution:
                     # put in current k, and go back to that k.
                     # continue augmenting path i - j1 with i0.
                     free[k] = i0
@@ -151,17 +154,20 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
                     # store i0 in list of free rows for next phase.
                     numfree += 1
                     free[numfree] = i0
-    cdef int f, up, low, last
+
+    cdef size_t f, up, low, last
     cdef double minh, h
-    cdef np.ndarray[long, ndim=1] collist
+    cdef np.ndarray[np.int32_t, ndim=1] collist
+    cdef int freerow
+    cdef np.ndarray[np.int32_t, ndim=1] pred, k0
 
     for f in xrange(numfree+1):
         freerow = free[f]  # start row of augmenting path
         # Dijkstra shortest path algorithm.
         # runs until unassigned column added to shortest path tree.
-        d = asVector(costMat[freerow, :] - v)
-        pred = asVector(freerow * ones(1, dim))
-        collist = np.array(range(dim), dtype=long)
+        d = asVector(costMat[freerow, :]) - v
+        pred = freerow * ones(dim, dtype='i4')
+        collist = np.array(range(dim), dtype='i4')
         low = 0  # columns in 1...low-1 are ready, now none.
         up = 0  #  columns in low...up-1 are to be scaed for current minimum, now none.
         # columns in up+1...dim are to be considered later to find new minimum,
@@ -189,7 +195,7 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
 
                 # check if any of the minimum columns happens to be unassigned.
                 # if so, we have an augmenting path right away.
-                for k in xrange(low,up):
+                for k in xrange(low, up):
                     if colsol[collist[k]] < 0:
                         endofpath = collist[k]
                         unassignedfound = True
@@ -200,10 +206,10 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
                 j1 = collist[low]
                 low += 1
                 i = colsol[j1] #line 215
-                x = asVector(costMat[i, :]-v)
+                x = asVector(costMat[i, :])-v
                 h = x[j1] - minh
                 xh = x-h
-                k0 = np.array(range(up, dim), dtype=long)
+                k0 = np.array(range(up, dim), dtype='i4')
                 j = collist[k0]
                 vf0 = xh<d
                 vf = vf0[j]
@@ -213,32 +219,32 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
                 v2 = xh[vj]
                 d[vj] = v2
                 vf = v2 == minh  # new column found at same minimum value
-                j2 = vj[vf]
+                q2 = vj[vf]
                 k2 = vk[vf]
-                cf = colsol[j2] < 0
+                cf = colsol[q2] < 0
                 if np.any(cf):  # unassigned, shortest augmenting path is complete.
-                    i2 = find(cf, 1)
-                    endofpath = j2[i2]
+                    i2 = find(cf, 1)[0]
+                    endofpath = q2[i2]
                     unassignedfound = True
                 else:
                     i2 = len(cf)+1
                 # add to list to be scaned right away
                 for k in range(0, i2-1):
                     collist[k2[k]] = collist[up]
-                    collist[up] = j2[k]
+                    collist[up] = q2[k]
                     up += 1
 
         # update column prices
-        j1=collist[1:last+1]
-        v[j1] = v[j1] + d[j1] - minh
+        q1 = collist[1:last+1]  # TL: q1 used to be j1
+        v[q1] = v[q1] + d[q1] - minh
         # reset row and column assignments along the alternating path
         while 1:
             i = pred[endofpath]
             colsol[endofpath] = i
-            j1 = endofpath
+            q1 = endofpath
             endofpath = rowsol[i]
-            rowsol[i] = j1
-            if [i==freerow]:
+            rowsol[i] = q1
+            if i==freerow:
                 break
 
     rowsol = rowsol[range(rdim)]
@@ -246,8 +252,8 @@ def cy_lapjv(np.ndarray[double, ndim=2] costMat, resolution=None):
     u = u[range(rdim)]
     v = v[range(cdim)]
     cost = sum(u)+sum(v[rowsol])
-    costMat = submatrix(costMat, range(rdim), range(cdim))
-    costMat = costMat - u[:, ones(cdim, dtype=int)] - v[ones(rdim, dtype=int), :]
+    costMat = submatrix(costMat, np.array(range(rdim)), np.array(range(cdim)))
+    costMat = costMat - u[:, ones(cdim, dtype='i4')] - v[ones(rdim, dtype='i4'), :]
     if swapf:
         costMat = costMat.T
         t = u.T
@@ -274,7 +280,10 @@ def min(A):
 
 
 def ones(x, y=1, dtype=float):
-    return np.ones((x, y), dtype=dtype)
+    if y == 1:
+        return np.ones(x, dtype=dtype)
+    else:
+        return np.ones((x, y), dtype=dtype)
 
 def sum(v):
     return np.sum(v, axis=0)
@@ -306,6 +315,9 @@ def zeros(unsigned int N, unsigned int D=1, dtype=float):
 def submatrix(np.ndarray[double, ndim=2] A, rows, cols):  # this is quite slow for some reason, maybe since a new array is allocated.
     I = np.ix_(rows, cols)
     return A[I]
+
+def asVectorInt(np.ndarray[np.int32_t, ndim=2] M):
+    return np.array(M)[0]
 
 def asVectorLong(np.ndarray[long, ndim=2] M):
     return np.array(M)[0]

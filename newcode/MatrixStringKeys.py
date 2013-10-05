@@ -41,6 +41,10 @@ class MSK:
         self.M = normalize(self.M, norm, axis=1)  # normalize rows
         return self
 
+    def log(self, offset=0):
+        self.M = sps.lil_matrix(np.log(self.M.todense() + offset))
+        return self
+
     def materialize(self, strings=None, features=None):
         if strings is None:
             strings = self.strings
@@ -51,6 +55,7 @@ class MSK:
         pi_j = [self.features[f] for f in features]
         A = common.submatrix(self.M, pi_i, pi_j)
         return A  # list has a more efficient cell access
+
 
     def getNonZeroFeatures(self, s):
         i = self.strings[s]

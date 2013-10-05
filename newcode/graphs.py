@@ -4,6 +4,7 @@ import common
 import numpy as np
 import scipy.sparse as sps
 import PSD
+import sys
 from MatrixStringKeys import MSK
 
 
@@ -69,8 +70,10 @@ def knn_graph(X, k):
 
 def toSymmetricStochastic(G, sym=True, stochastic=True, norm='l1'):
     if sym:
+        print >> sys.stderr, 'symmetrizing'
         G = (G + G.T) / 2
     if stochastic:
+        print >> sys.stderr, 'normalizing'
         G = normalize(G, norm, axis=1)  # make stochastic matrix.
     return G
 
