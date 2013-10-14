@@ -1,5 +1,5 @@
 from Counter0 import Counter
-from collections import OrderedDict
+from OrderedDict0 import OrderedDict
 from collections import defaultdict
 import common
 import nltk

@@ -1,5 +1,5 @@
 #generates the data from the generative story
-from collections import OrderedDict
+from OrderedDict0 import OrderedDict
 from common import *
 import IO
 import perm
