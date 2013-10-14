@@ -65,8 +65,6 @@ if __name__ == '__main__':
             i = M.features[w]
             L[:, i] = 0
         #L *= (L > options.minCoFreq)
-
-
         output_edges(M, L, M.reverseFeatures)
     elif graph_mode == 2:  # PMI
         M.M = M.M.todense()

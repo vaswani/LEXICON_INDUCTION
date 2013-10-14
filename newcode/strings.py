@@ -1,7 +1,7 @@
 import editdist  # please import the edit distance code available at https://code.google.com/p/py-editdist/
 import numpy as np
-from Counter0 import Counter
-from OrderedDict0 import OrderedDict
+from collections import Counter
+from collections import OrderedDict
 
 
 def strlen(a): # given an array of strings, returns an array of string lengths

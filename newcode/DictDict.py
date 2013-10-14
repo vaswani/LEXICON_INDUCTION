@@ -1,5 +1,5 @@
 __author__ = 'Tomer'
-from OrderedDict0 import OrderedDict
+from _collections import OrderedDict
 import copy
 
 def add(dd1, dd2):
