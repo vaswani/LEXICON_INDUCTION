@@ -27,6 +27,9 @@ def find_matching(options, wordsX, wordsY):
     GX = None
     GY = None
 
+    options.cca_weights = None
+    sorted_edge_cost = None
+
     fixed_point = False
     for t in range(0, options.T):
         options.t = t
@@ -36,15 +39,19 @@ def find_matching(options, wordsX, wordsY):
             wordsX.ICD_representation(Nt, options.eta)
             wordsY.ICD_representation(Nt, options.eta)
 
+
         # STEP 1: compute CCA model on the well matched portion of the matching (which includes the fixed seed)
         fixedX = wordsX.features[Nt:, :]
         fixedY = wordsY.features[Nt:, :]
+        if options.useCCAWeights == 1 and sorted_edge_cost is not None:
+            bandwidth = np.median(sorted_edge_cost)
+            options.cca_weights = np.exp(-sorted_edge_cost[Nt:] / (2*bandwidth))  # exp is useful when dist is used
         # if options.noise_level > 0:
         #     fixedX += options.noise_level*common.randn(fixedX.shape)
         #     fixedY += options.noise_level*common.randn(fixedY.shape)
 
         print >> sys.stderr, colored('CCA dimensions =', 'green'), len(fixedX)
-        cca_model = CU.learn(fixedX, fixedY , options)
+        cca_model = CU.learn(fixedX, fixedY, options)
         print >> sys.stderr, len(cca_model.p), 'Top 10 correlation coefficients:', cca_model.p[:10]
         # STEP 2: compute CCA representation of all samples
         print >> sys.stderr, 'norms', norm(wordsX.features), norm(wordsY.features)
@@ -166,10 +173,10 @@ def parseOptions():
     parser.add_option('-l', '--lexicon', dest='filename_lexicon', action='store', default=None)    
     parser.add_option('-p', '--pickled', dest='pickled', type="int", action='store', default=1)
     parser.add_option('--useContextFeatures', dest='useContextFeatures', type="int", action='store', default=1)
-    parser.add_option('--useOrthoFeatures', dest='useOrthoFeatures', type="int", action='store', default=1)
+    parser.add_option('--useOrthoFeatures', dest='useOrthoFeatures', type="int", action='store', default=0)
     parser.add_option('--useCache', dest='useCache', type="int", action='store', default=1)
     # mcca setting
-    parser.add_option('-z', '--step_size', dest='step_size', type="int", action='store', default=150)
+    parser.add_option('-z', '--step_size', dest='step_size', type="int", action='store', default=100)
     parser.add_option('-T', '--iterations', dest='T', type="int", action='store', default=10)
     parser.add_option('-w', '--weight_type', dest='weight_type', action='store', default='inner')    
     parser.add_option('-t', '--tau', dest='tau', type="float", action='store', default=0.001)  # CCA regularizer
@@ -178,7 +185,11 @@ def parseOptions():
     parser.add_option('--norm_proj', dest='normalize_projections', type="int", action='store', default=1)
     parser.add_option('--covar_type', dest='covar_type', type="string", action='store', default=None)
     parser.add_option('--projection_type', dest='projection_type', type="string", action='store', default=None)
-    # graph settings
+    parser.add_option('--useCCAWeights', dest='useCCAWeights', type="int", action='store', default=0)
+    # graph sett
+
+
+
     parser.add_option('-K', '--K', dest='K', type="int", action='store', default=0)
     parser.add_option('--alpha', dest='alpha', type="float", action='store', default=0)
     parser.add_option('--GX', dest='filename_graphX', action='store', default=None)

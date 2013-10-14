@@ -1,6 +1,6 @@
 import editdist  # please import the edit distance code available at https://code.google.com/p/py-editdist/
 import numpy as np
-from collections import Counter
+from Counter0 import Counter
 from collections import OrderedDict
 
 

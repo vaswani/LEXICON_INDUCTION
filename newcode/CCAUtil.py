@@ -13,7 +13,7 @@ def symmetricSqrt(A):
     return P * np.sqrt(D) * P.T
 
 
-def computeCorr(X, Y, covar_type, tau):
+def computeCorr(X, Y, options):
     X = np.mat(X)
     Y = np.mat(Y)
     (NX, Dx) = X.shape
@@ -21,12 +21,29 @@ def computeCorr(X, Y, covar_type, tau):
     assert NX == NY
     N = NX
 
-    if covar_type == 'outer':
-        Cxx = X.T*X/N  # C[:Dx, :Dx]
-        Cxy = X.T*Y/N  # C[:Dx, Dx:]
-        Cyy = Y.T*Y/N  # C[Dx:, Dx:]
+    tau = options.tau
+    covar_type = options.covar_type
+    ## process weights
+    if options.cca_weights is None:
+        weights = common.asVector(np.ones((N, 1)))
     else:
-        Z = np.c_[X, Y]  # stack X Y by rows
+        print 'CCA Weights:', options.cca_weights
+        sum_weights = np.sum(options.cca_weights)
+        weights = common.asVector(N*options.cca_weights / sum_weights)
+
+        weights = common.asVector(weights)
+        print 'weights:', weights
+        assert np.all(weights > 0)
+        assert len(weights) == N
+
+    if covar_type == 'outer':
+        W = np.diag(weights)
+        Cxx = X.T*W*X/N  # C[:Dx, :Dx]
+        Cxy = X.T*W*Y/N  # C[:Dx, Dx:]
+        Cyy = Y.T*W*Y/N  # C[Dx:, Dx:]
+    else:
+        W = np.diag(np.sqrt(weights))
+        Z = np.c_[W*X, W*Y]  # stack X Y by rows
         C = np.cov(Z.T)
         Cxx = C[:Dx, :Dx]
         Cxy = C[:Dx, Dx:]
@@ -40,7 +57,7 @@ def computeCorr(X, Y, covar_type, tau):
 
 # primal CCA, with regularizer tau
 def learn(X, Y, options):
-    (Sxx, Sxy, Syy) = computeCorr(X, Y, options.covar_type, options.tau)
+    (Sxx, Sxy, Syy) = computeCorr(X, Y, options)
 
     # compute the matrix (Sxx)^-0.5 * Sxy * (Syy)^-0.5
     Ry = symmetricSqrt(Syy)
