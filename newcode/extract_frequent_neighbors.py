@@ -12,7 +12,7 @@ def parseOptions():
     # general setting
     parser.add_option('--K', dest='K', type="int", action='store', default=10) # how many neighbors to extract?
     parser.add_option('--minCoFreq', dest='minCoFreq', type="int", action='store', default=0) # but only if they occurred at least minCoFreq times.
-    parser.add_option('--M', dest='M', type="int", action='store', default=100) # remove words that co-occur with more than 50 distance words (they carry no information)
+    parser.add_option('--M', dest='M', type="int", action='store', default=150) # remove words that co-occur with more than 50 distance words (they carry no information)
     (options, args) = parser.parse_args()
     return options
 
