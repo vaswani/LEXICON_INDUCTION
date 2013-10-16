@@ -44,8 +44,9 @@ def find_matching(options, wordsX, wordsY):
         fixedX = wordsX.features[Nt:, :]
         fixedY = wordsY.features[Nt:, :]
         if options.useCCAWeights == 1 and sorted_edge_cost is not None:
-            bandwidth = np.median(sorted_edge_cost)
-            options.cca_weights = np.exp(-sorted_edge_cost[Nt:] / (2*bandwidth))  # exp is useful when dist is used
+            q = np.sqr(sorted_edge_cost[Nt:])
+            bandwidth = np.median(q)
+            options.cca_weights = np.exp(-q / (2*bandwidth))  # exp is useful when dist is used
         # if options.noise_level > 0:
         #     fixedX += options.noise_level*common.randn(fixedX.shape)
         #     fixedY += options.noise_level*common.randn(fixedY.shape)
