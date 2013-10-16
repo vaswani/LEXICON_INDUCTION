@@ -39,12 +39,11 @@ def find_matching(options, wordsX, wordsY):
             wordsX.ICD_representation(Nt, options.eta)
             wordsY.ICD_representation(Nt, options.eta)
 
-
         # STEP 1: compute CCA model on the well matched portion of the matching (which includes the fixed seed)
         fixedX = wordsX.features[Nt:, :]
         fixedY = wordsY.features[Nt:, :]
         if options.useCCAWeights == 1 and sorted_edge_cost is not None:
-            q = np.sqr(sorted_edge_cost[Nt:])
+            q = np.square(sorted_edge_cost[Nt:])
             bandwidth = np.median(q)
             options.cca_weights = np.exp(-q / (2*bandwidth))  # exp is useful when dist is used
         # if options.noise_level > 0:
